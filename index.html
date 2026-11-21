@@ -256,8 +256,8 @@ var CONFIG = {
     // 流星雨
     if (t > 2.35 && meteors.length < 26 && Math.random() < 0.30){
       meteors.push({
-        x: Math.random() * W * 0.9 + W * 0.15,
-        y: -40 - Math.random() * 120,
+        x: Math.random() * W * 1.15,
+        y: Math.random() * H * 0.45 - 70,
         vx: -(Math.random() * 3.2 + 3.4),
         vy: Math.random() * 4.2 + 5.2,
         life: 1,
