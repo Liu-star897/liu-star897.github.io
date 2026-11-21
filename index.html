@@ -263,6 +263,7 @@ var CONFIG = {
         life: 1,
         len: Math.random() * 90 + 110
       });
+      if (meteors.length === 1) console.log("meteor-start t=" + t.toFixed(2));
     }
     for (var k = meteors.length - 1; k >= 0; k--){
       var mt = meteors[k];
@@ -278,7 +279,7 @@ var CONFIG = {
       grad.addColorStop(0.3, "rgba(240,200,140," + mt.life * 0.42 + ")");
       grad.addColorStop(1, "rgba(240,200,140,0)");
       ctx.strokeStyle = grad;
-      ctx.lineWidth = 1.7;
+      ctx.lineWidth = 2.4;
       ctx.beginPath();
       ctx.moveTo(mt.x, mt.y);
       ctx.lineTo(mt.x - mt.vx * 15, mt.y - mt.vy * 15);
