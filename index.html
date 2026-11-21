@@ -254,7 +254,7 @@ var CONFIG = {
     }
 
     // 流星雨
-    if (t > 2.35 && meteors.length < 26){
+    if (t > 2.35 && meteors.length < 26 && Math.random() < 0.45){
       meteors.push({
         x: Math.random() * W,
         y: Math.random() * H * 0.5,
@@ -263,7 +263,6 @@ var CONFIG = {
         life: 1,
         len: Math.random() * 90 + 110
       });
-      if (meteors.length === 1) console.log("meteor-start t=" + t.toFixed(2));
     }
     for (var k = meteors.length - 1; k >= 0; k--){
       var mt = meteors[k];
@@ -289,7 +288,6 @@ var CONFIG = {
     // 字幕
     if (t > 2.6){
       document.getElementById("final").classList.add("on");
-      document.getElementById("sub2").textContent = "t=" + t.toFixed(2) + " / meteors=" + meteors.length;
     }
     if (t > 6.4){
       document.getElementById("fade").classList.add("on");
