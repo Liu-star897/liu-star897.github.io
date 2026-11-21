@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>给 葛成璐</title>
+<title>给 葛成璐 的流星雨</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='24' font-size='24'%3E%E2%9C%A8%3C/text%3E%3C/svg%3E">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -13,14 +13,15 @@ body{
   color:#e8eaf2;-webkit-font-smoothing:antialiased;
 }
 #cv{position:fixed;inset:0;display:block}
+
 #gate{
-  position:fixed;inset:0;z-index:3;
+  position:fixed;inset:0;z-index:6;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:24px;text-align:center;
   transition:opacity .7s ease,transform .7s ease;
 }
 #gate.gone{opacity:0;transform:scale(1.08);pointer-events:none}
-.hint{font-size:13px;letter-spacing:.3em;color:#6b7694;margin-bottom:34px}
+.hint{font-size:13px;letter-spacing:.3em;color:#7d88a8;margin-bottom:34px}
 .field{position:relative;width:min(320px,80vw)}
 #dob{
   width:100%;background:transparent;border:0;border-bottom:1px solid rgba(240,201,135,.28);
@@ -46,18 +47,51 @@ body{
 }
 .forgot{margin-top:44px;font-size:11px;color:#39415a;letter-spacing:.1em}
 .forgot a{color:#5c6684;cursor:pointer;text-decoration:underline;text-underline-offset:4px}
+
+/* 标题卡 */
+#card{
+  position:fixed;inset:0;z-index:4;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;text-align:center;
+  opacity:0;pointer-events:none;transition:opacity 1.2s ease;
+}
+#card.on{opacity:1;pointer-events:auto}
+#card h1{
+  font-family:"Songti SC","Noto Serif SC",Georgia,serif;
+  font-size:clamp(26px,5.4vw,58px);font-weight:600;letter-spacing:.14em;
+  color:#fff;line-height:1.35;
+  text-shadow:0 0 24px rgba(160,200,255,.65),0 0 70px rgba(90,150,255,.35);
+}
+#card .t1{
+  margin-top:30px;font-size:clamp(13px,1.9vw,17px);letter-spacing:.14em;
+  color:#dbe6ff;text-shadow:0 0 18px rgba(120,170,255,.5);
+}
+#card .t2{
+  margin-top:14px;font-size:clamp(12px,1.7vw,15px);letter-spacing:.14em;
+  color:#b9c9ea;text-shadow:0 0 16px rgba(100,150,255,.4);
+}
+#next{
+  margin-top:46px;padding:12px 40px;border-radius:999px;cursor:pointer;
+  background:rgba(255,196,120,.14);border:1px solid rgba(255,206,140,.6);
+  color:#ffe7bb;font-size:13px;letter-spacing:.32em;font-family:inherit;
+  box-shadow:0 0 40px rgba(255,190,110,.28);
+  transition:.35s;
+}
+#next:hover{background:rgba(255,196,120,.26);box-shadow:0 0 60px rgba(255,190,110,.5)}
+#card .tip{margin-top:16px;font-size:11px;letter-spacing:.24em;color:#5d6b8f}
+
 #final{
   position:fixed;inset:0;z-index:2;display:flex;flex-direction:column;
-  align-items:center;justify-content:flex-end;padding-bottom:15vh;
+  align-items:center;justify-content:flex-end;padding-bottom:13vh;
   opacity:0;pointer-events:none;transition:opacity 1.1s ease;
 }
 #final.on{opacity:1}
 #final .sub{font-size:12px;letter-spacing:.42em;color:#c9a86e}
-#final .sub2{margin-top:14px;font-size:11px;letter-spacing:.3em;color:#4d5773}
-#fade{position:fixed;inset:0;z-index:4;background:#02040a;opacity:0;pointer-events:none;transition:opacity 1s ease}
+#final .sub2{margin-top:14px;font-size:11px;letter-spacing:.3em;color:#5a6485}
+#fade{position:fixed;inset:0;z-index:8;background:#02040a;opacity:0;pointer-events:none;transition:opacity 1.2s ease}
 #fade.on{opacity:1}
 #skip{
-  position:fixed;right:20px;bottom:18px;z-index:5;font-size:11px;letter-spacing:.18em;
+  position:fixed;right:20px;bottom:18px;z-index:7;font-size:11px;letter-spacing:.18em;
   color:#3f4864;cursor:pointer;display:none;
 }
 </style>
@@ -75,6 +109,14 @@ body{
   <p class="forgot">想不起来了？<a id="tip">给你一点提示</a></p>
 </div>
 
+<div id="card">
+  <h1>给 葛 成 璐 的 流 星 雨</h1>
+  <p class="t1">愿你的十九岁，像这一刻流星一样闪耀。</p>
+  <p class="t2">好事追着你，幸运围着你。</p>
+  <button id="next">继 续</button>
+  <p class="tip">点 击 看 下 一 页</p>
+</div>
+
 <div id="final">
   <p class="sub" id="sub1"></p>
   <p class="sub2" id="sub2"></p>
@@ -86,7 +128,6 @@ body{
 <script>
 var CONFIG = {
   answer: "20071206",
-  word: "葛成璐",
   sub1: "2007.12.06",
   sub2: "生 日 快 乐 · 第 十 九 个 冬 天",
   home: "home.html"
@@ -98,39 +139,49 @@ var CONFIG = {
   var W = 0, H = 0;
   var stars = [], parts = [], meteors = [], warp = [];
   var phase = "gate";
-  var T0 = 0;
-  var WARP = 1.25;
+  var T0 = 0, P0 = 0;
+  var WARP = 1.2;
+  var RAIN = 3.4;
+  var bgGrad = null;
 
   function resize(){
     W = cv.width = innerWidth;
     H = cv.height = innerHeight;
     buildStars();
+    bgGrad = ctx.createRadialGradient(W * 0.5, H * 0.42, 0, W * 0.5, H * 0.42, Math.max(W, H) * 0.9);
+    bgGrad.addColorStop(0, "#0a1836");
+    bgGrad.addColorStop(0.45, "#050b1c");
+    bgGrad.addColorStop(1, "#010206");
   }
 
   function buildStars(){
     stars = [];
-    var n = Math.round(W * H / 5200);
+    var n = Math.round(W * H / 3600);
     if (n > 320) n = 320;
     for (var i = 0; i < n; i++){
       stars.push({
         x: Math.random() * W, y: Math.random() * H,
-        r: Math.random() * 1.1 + .25,
-        a: Math.random() * .45 + .08,
-        s: Math.random() * .0012 + .0004,
+        r: Math.random() * 1.2 + .2,
+        a: Math.random() * .55 + .08,
+        s: Math.random() * .0012 + .0003,
         p: Math.random() * 6.28
       });
     }
   }
 
-  function textPoints(cx, cy, size, gap){
+  /* ---------- 文字取样 ---------- */
+  function textPoints(lines, gap){
     var off = document.createElement("canvas");
     off.width = W; off.height = H;
     var o = off.getContext("2d");
     o.fillStyle = "#fff";
-    o.font = "600 " + size + 'px "Songti SC","Noto Serif SC",Georgia,serif';
     o.textAlign = "center";
     o.textBaseline = "middle";
-    o.fillText(CONFIG.word, cx, cy);
+    for (var i = 0; i < lines.length; i++){
+      var ln = lines[i];
+      o.font = "600 " + ln.size + 'px "Songti SC","Noto Serif SC",Georgia,serif';
+      o.fillText(ln.text, W / 2, H / 2 + ln.dy);
+    }
     var data = o.getImageData(0, 0, W, H).data;
     var pts = [];
     for (var y = 0; y < H; y += gap){
@@ -141,10 +192,10 @@ var CONFIG = {
     return pts;
   }
 
-  /* ---------- 阶段一：星光穿越 ---------- */
+  /* ---------- 穿越 ---------- */
   function buildWarp(){
     warp = [];
-    for (var i = 0; i < 280; i++){
+    for (var i = 0; i < 300; i++){
       warp.push({
         a: Math.random() * 6.2832,
         r: Math.random() * 26 + 4,
@@ -170,43 +221,196 @@ var CONFIG = {
       ctx.beginPath();
       ctx.moveTo(px, py);
       ctx.lineTo(x, y);
-      ctx.strokeStyle = "rgba(196,214,246," + (a * 0.7) + ")";
-      ctx.lineWidth = 1.15;
+      ctx.strokeStyle = "rgba(198,220,255," + (a * 0.75) + ")";
+      ctx.lineWidth = 1.2;
       ctx.stroke();
     }
   }
 
-  /* ---------- 阶段二：粒子爆发 → 汇聚成名字 ---------- */
+  /* ---------- 流星雨 ---------- */
+  function spawnMeteor(){
+    var side = Math.random();
+    var x, y;
+    if (side < 0.62){
+      x = Math.random() * W * 1.25;
+      y = -30 - Math.random() * H * 0.35;
+    } else {
+      x = W + Math.random() * 220;
+      y = Math.random() * H * 0.6;
+    }
+    var speed = Math.random() * 6 + 6;
+    meteors.push({
+      x: x, y: y,
+      vx: -speed * 0.78,
+      vy: speed,
+      life: 1,
+      fade: Math.random() * 0.004 + 0.004,
+      w: Math.random() * 1.4 + 1.1,
+      tail: Math.random() * 18 + 16
+    });
+  }
+
+  function drawMeteors(){
+    for (var k = meteors.length - 1; k >= 0; k--){
+      var mt = meteors[k];
+      mt.x += mt.vx;
+      mt.y += mt.vy;
+      mt.life -= mt.fade;
+      if (mt.life <= 0 || mt.y > H + 300 || mt.x < -400){
+        meteors.splice(k, 1);
+        continue;
+      }
+      var ex = mt.x - mt.vx * mt.tail;
+      var ey = mt.y - mt.vy * mt.tail;
+      var grad = ctx.createLinearGradient(mt.x, mt.y, ex, ey);
+      grad.addColorStop(0, "rgba(255,252,242," + mt.life + ")");
+      grad.addColorStop(0.18, "rgba(210,232,255," + (mt.life * 0.72) + ")");
+      grad.addColorStop(0.6, "rgba(150,190,255," + (mt.life * 0.22) + ")");
+      grad.addColorStop(1, "rgba(120,160,255,0)");
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = mt.w;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(mt.x, mt.y);
+      ctx.lineTo(ex, ey);
+      ctx.stroke();
+    }
+  }
+
+  /* ---------- 汇聚 ---------- */
   function beginBurst(){
     phase = "burst";
-    T0 = performance.now();
+    P0 = performance.now();
 
-    var cx = W / 2, cy = H / 2;
-    var chars = CONFIG.word.length;
-    var size = Math.min(W * (0.80 / chars), H * 0.30, 230);
-    var gap = Math.max(3, Math.round(size / 30));
-    var pts = textPoints(cx, cy, size, gap);
-    if (!pts.length) pts = [{ x: cx, y: cy }];
+    var w1 = Math.min(W * 0.115, H * 0.15, 118);
+    var w2 = Math.min(W * 0.215, H * 0.27, 208);
+    var pts = textPoints([
+      { text: "生日快乐", size: w1, dy: -w2 * 0.72 },
+      { text: "葛成璐", size: w2, dy: w2 * 0.52 }
+    ], Math.max(3, Math.round(w2 / 34)));
 
+    if (!pts.length) pts = [{ x: W / 2, y: H / 2 }];
     for (var i = pts.length - 1; i > 0; i--){
       var k = Math.floor(Math.random() * (i + 1));
       var tmp = pts[i]; pts[i] = pts[k]; pts[k] = tmp;
     }
 
-    var count = Math.min(pts.length, 1800);
+    var count = Math.min(pts.length, 1600);
     parts = [];
     for (var n = 0; n < count; n++){
-      var ang = Math.random() * Math.PI * 2;
-      var sp = Math.random() * 5.5 + 1.2;
+      var edge = Math.random();
+      var sx, sy;
+      if (edge < 0.5){ sx = Math.random() * W; sy = -20 - Math.random() * 120; }
+      else if (edge < 0.75){ sx = W + 20 + Math.random() * 120; sy = Math.random() * H; }
+      else { sx = -20 - Math.random() * 120; sy = Math.random() * H; }
       parts.push({
-        x: cx, y: cy,
-        vx: Math.cos(ang) * sp,
-        vy: Math.sin(ang) * sp,
-        sx: 0, sy: 0,
+        x: sx, y: sy,
+        sx: sx, sy: sy,
         tx: pts[n].x, ty: pts[n].y,
-        r: Math.random() * 1.5 + .6
+        r: Math.random() * 1.4 + .55,
+        d: Math.random() * 0.35
       });
     }
+  }
+
+  function easeOut(t){ return 1 - Math.pow(1 - t, 3); }
+
+  function tick(now){
+    var t = (now - T0) / 1000;
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    for (var i = 0; i < stars.length; i++){
+      var s = stars[i];
+      var al = s.a + Math.sin(now * s.s + s.p) * .2;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, 6.2832);
+      ctx.fillStyle = "rgba(214,228,255," + Math.max(0, al) + ")";
+      ctx.fill();
+    }
+
+    if (phase === "gate"){
+      raf = requestAnimationFrame(tick);
+      return;
+    }
+
+    if (phase === "warp"){
+      drawWarp(t);
+      if (t > WARP){
+        phase = "rain";
+        T0 = performance.now();
+        for (var q = 0; q < 40; q++) spawnMeteor();
+      }
+      raf = requestAnimationFrame(tick);
+      return;
+    }
+
+    if (phase === "rain"){
+      var dens = Math.min(1, t / (RAIN * 0.55));
+      if (meteors.length < 220 && Math.random() < 0.55 * dens) spawnMeteor();
+      if (meteors.length < 220 && Math.random() < 0.35 * dens) spawnMeteor();
+      drawMeteors();
+      if (t > RAIN){
+        phase = "card";
+        document.getElementById("card").classList.add("on");
+        document.getElementById("skip").style.display = "block";
+      }
+      raf = requestAnimationFrame(tick);
+      return;
+    }
+
+    if (phase === "card"){
+      if (meteors.length < 140 && Math.random() < 0.35) spawnMeteor();
+      drawMeteors();
+      raf = requestAnimationFrame(tick);
+      return;
+    }
+
+    // burst
+    var pt2 = (now - P0) / 1000;
+    var p = Math.min(1, pt2 / 1.9);
+    if (meteors.length < 90 && Math.random() < 0.22) spawnMeteor();
+    drawMeteors();
+
+    for (var j = 0; j < parts.length; j++){
+      var pt = parts[j];
+      var prog = Math.max(0, Math.min(1, (p - pt.d) / (1 - pt.d)));
+      var e = easeOut(prog);
+      pt.x = pt.sx + (pt.tx - pt.sx) * e;
+      pt.y = pt.sy + (pt.ty - pt.sy) * e;
+      var alpha = 0.45 + 0.5 * e;
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, pt.r, 0, 6.2832);
+      ctx.fillStyle = "rgba(246,220,172," + alpha + ")";
+      ctx.fill();
+    }
+
+    if (p > 0.86){
+      ctx.globalCompositeOperation = "lighter";
+      ctx.fillStyle = "rgba(238,186,120,0.055)";
+      for (var m = 0; m < parts.length; m += 4){
+        var qq = parts[m];
+        ctx.beginPath();
+        ctx.arc(qq.x, qq.y, qq.r * 3.4, 0, 6.2832);
+        ctx.fill();
+      }
+      ctx.globalCompositeOperation = "source-over";
+    }
+
+    if (pt2 > 2.1){
+      document.getElementById("final").classList.add("on");
+    }
+    if (pt2 > 4.6){
+      document.getElementById("fade").classList.add("on");
+    }
+    if (pt2 > 5.9){
+      location.href = CONFIG.home;
+      return;
+    }
+
+    raf = requestAnimationFrame(tick);
   }
 
   function startShow(){
@@ -219,124 +423,6 @@ var CONFIG = {
     var sk = document.getElementById("skip");
     sk.style.display = "block";
     sk.addEventListener("click", function(){ location.href = CONFIG.home; });
-  }
-
-  function easeOut(t){ return 1 - Math.pow(1 - t, 3); }
-
-  function tick(now){
-    var t = (now - T0) / 1000;
-    ctx.clearRect(0, 0, W, H);
-
-    // 背景星
-    for (var i = 0; i < stars.length; i++){
-      var s = stars[i];
-      var al = s.a + Math.sin(now * s.s + s.p) * .18;
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, s.r, 0, 6.2832);
-      ctx.fillStyle = "rgba(226,214,190," + Math.max(0, al) + ")";
-      ctx.fill();
-    }
-
-    if (phase === "gate"){
-      var glow = 0.06 + Math.sin(now * 0.0015) * 0.03;
-      var g = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * .5);
-      g.addColorStop(0, "rgba(240,201,135," + glow + ")");
-      g.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, W, H);
-      raf = requestAnimationFrame(tick);
-      return;
-    }
-
-    if (phase === "warp"){
-      drawWarp(t);
-      if (t > WARP) beginBurst();
-      raf = requestAnimationFrame(tick);
-      return;
-    }
-
-    var gatherAt = 0.95;
-    var gatherDur = 1.15;
-    var p = 0;
-    if (t > gatherAt) p = Math.min(1, (t - gatherAt) / gatherDur);
-
-    for (var j = 0; j < parts.length; j++){
-      var pt = parts[j];
-      if (t < gatherAt){
-        pt.x += pt.vx;
-        pt.y += pt.vy;
-        pt.vx *= 0.985;
-        pt.vy *= 0.985;
-      } else {
-        if (!pt.sx){ pt.sx = pt.x; pt.sy = pt.y; }
-        var e = easeOut(p);
-        pt.x = pt.sx + (pt.tx - pt.sx) * e;
-        pt.y = pt.sy + (pt.ty - pt.sy) * e;
-      }
-      var alpha = p > 0.06 ? 0.92 : 0.55;
-      ctx.beginPath();
-      ctx.arc(pt.x, pt.y, pt.r, 0, 6.2832);
-      ctx.fillStyle = "rgba(245,214,160," + alpha + ")";
-      ctx.fill();
-    }
-
-    if (p > 0.9){
-      ctx.globalCompositeOperation = "lighter";
-      ctx.filter = "blur(8px)";
-      for (var m = 0; m < parts.length; m += 3){
-        var q = parts[m];
-        ctx.beginPath();
-        ctx.arc(q.x, q.y, q.r * 2.2, 0, 6.2832);
-        ctx.fillStyle = "rgba(240,180,110,0.10)";
-        ctx.fill();
-      }
-      ctx.filter = "none";
-      ctx.globalCompositeOperation = "source-over";
-    }
-
-    // 流星雨
-    if (t > 1.35 && meteors.length < 30 && Math.random() < 0.45){
-      meteors.push({
-        x: Math.random() * W,
-        y: Math.random() * H * 0.5,
-        vx: -(Math.random() * 3.2 + 3.4),
-        vy: Math.random() * 4.2 + 5.2,
-        life: 1
-      });
-    }
-    for (var k = meteors.length - 1; k >= 0; k--){
-      var mt = meteors[k];
-      mt.x += mt.vx;
-      mt.y += mt.vy;
-      mt.life -= 0.0075;
-      if (mt.life <= 0 || mt.y > H + 200 || mt.x < -300){
-        meteors.splice(k, 1);
-        continue;
-      }
-      var grad = ctx.createLinearGradient(mt.x, mt.y, mt.x - mt.vx * 15, mt.y - mt.vy * 15);
-      grad.addColorStop(0, "rgba(255,248,230," + mt.life * 0.95 + ")");
-      grad.addColorStop(0.3, "rgba(240,200,140," + mt.life * 0.42 + ")");
-      grad.addColorStop(1, "rgba(240,200,140,0)");
-      ctx.strokeStyle = grad;
-      ctx.lineWidth = 2.2;
-      ctx.beginPath();
-      ctx.moveTo(mt.x, mt.y);
-      ctx.lineTo(mt.x - mt.vx * 15, mt.y - mt.vy * 15);
-      ctx.stroke();
-    }
-
-    if (t > 1.6){
-      document.getElementById("final").classList.add("on");
-    }
-    if (t > 5.0){
-      document.getElementById("fade").classList.add("on");
-    }
-    if (t > 6.5){
-      location.href = CONFIG.home;
-      return;
-    }
-
-    raf = requestAnimationFrame(tick);
   }
 
   var inp = document.getElementById("dob");
@@ -368,9 +454,17 @@ var CONFIG = {
   inp.addEventListener("keydown", function(e){
     if (e.key === "Enter") submit();
   });
-
   document.getElementById("tip").addEventListener("click", function(){
     document.getElementById("tip").textContent = "2007 年的那个冬天";
+  });
+
+  document.getElementById("next").addEventListener("click", function(){
+    if (phase !== "card") return;
+    document.getElementById("card").classList.remove("on");
+    setTimeout(function(){
+      document.getElementById("card").style.display = "none";
+      beginBurst();
+    }, 900);
   });
 
   document.getElementById("sub1").textContent = CONFIG.sub1;
