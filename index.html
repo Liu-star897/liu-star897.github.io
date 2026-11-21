@@ -2,96 +2,345 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>生日快乐</title>
-<link rel="stylesheet" href="style.css">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>给 你</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='24' font-size='24'%3E%E2%9C%A8%3C/text%3E%3C/svg%3E">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;background:#02040a}
+body{
+  font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  color:#e8eaf2;-webkit-font-smoothing:antialiased;
+}
+#cv{position:fixed;inset:0;display:block}
+
+/* ---------- 输入闸门 ---------- */
+#gate{
+  position:fixed;inset:0;z-index:3;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;text-align:center;
+  transition:opacity .7s ease,transform .7s ease;
+}
+#gate.gone{opacity:0;transform:scale(1.08);pointer-events:none}
+.hint{font-size:13px;letter-spacing:.3em;color:#6b7694;margin-bottom:34px}
+.field{position:relative;width:min(320px,80vw)}
+#dob{
+  width:100%;background:transparent;border:0;border-bottom:1px solid rgba(240,201,135,.28);
+  color:#f0c987;font-size:26px;letter-spacing:.14em;text-align:center;
+  padding:12px 4px;outline:none;font-family:inherit;
+  transition:border-color .4s,box-shadow .4s;
+}
+#dob::placeholder{color:#3d4660;letter-spacing:.12em;font-size:22px}
+#dob:focus{border-color:rgba(240,201,135,.85);box-shadow:0 12px 40px -18px rgba(240,201,135,.6)}
+#go{
+  margin-top:38px;padding:11px 34px;border-radius:999px;cursor:pointer;
+  background:transparent;border:1px solid rgba(240,201,135,.32);
+  color:#f0c987;font-size:13px;letter-spacing:.28em;font-family:inherit;
+  transition:.35s;
+}
+#go:hover{border-color:#f0c987;background:rgba(240,201,135,.08)}
+#err{height:20px;margin-top:16px;font-size:12px;color:#cf7a7a;letter-spacing:.1em;opacity:0;transition:.3s}
+#err.show{opacity:1}
+.shake{animation:shake .45s}
+@keyframes shake{
+  0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}
+  40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}
+}
+.forgot{margin-top:44px;font-size:11px;color:#39415a;letter-spacing:.1em}
+.forgot a{color:#5c6684;cursor:pointer;text-decoration:underline;text-underline-offset:4px}
+
+/* ---------- 收尾字幕 ---------- */
+#final{
+  position:fixed;inset:0;z-index:2;display:flex;flex-direction:column;
+  align-items:center;justify-content:flex-end;padding-bottom:16vh;
+  opacity:0;pointer-events:none;transition:opacity 1.1s ease;
+}
+#final.on{opacity:1}
+#final .sub{
+  font-size:12px;letter-spacing:.42em;color:#c9a86e;
+}
+#final .sub2{
+  margin-top:14px;font-size:11px;letter-spacing:.3em;color:#4d5773;
+}
+#fade{position:fixed;inset:0;z-index:4;background:#02040a;opacity:0;pointer-events:none;transition:opacity 1s ease}
+#fade.on{opacity:1}
+</style>
 </head>
 <body>
-<canvas id="sky"></canvas>
-<div class="wrap">
+<canvas id="cv"></canvas>
 
-  <header class="hero">
-    <p class="kicker">Happy Birthday</p>
-    <h1>生日快乐</h1>
-    <p class="sub">今天的主角，是你</p>
-    <div class="line"></div>
-  </header>
-
-  <section class="entries">
-    <a class="card" href="letter.html">
-      <span class="num">01</span>
-      <h2>写给你的信</h2>
-      <p>有些话当面说会不好意思，所以写下来。</p>
-      <span class="go">打开 <span>→</span></span>
-    </a>
-    <a class="card" href="gallery.html">
-      <span class="num">02</span>
-      <h2>那年今天</h2>
-      <p>一些攒了很久的照片，和照片背后的故事。</p>
-      <span class="go">打开 <span>→</span></span>
-    </a>
-    <a class="card" href="story.html">
-      <span class="num">03</span>
-      <h2>我们的时间线</h2>
-      <p>从第一次说话那天起，一直到这里。</p>
-      <span class="go">打开 <span>→</span></span>
-    </a>
-    <a class="card" href="wish.html">
-      <span class="num">04</span>
-      <h2>许个愿</h2>
-      <p>吹蜡烛之前，先想一个不告诉别人的愿望。</p>
-      <span class="go">打开 <span>→</span></span>
-    </a>
-  </section>
-
-  <footer>MADE JUST FOR YOU</footer>
+<div id="gate">
+  <p class="hint">请 输 入 一 个 日 期</p>
+  <div class="field">
+    <input id="dob" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="YYYY-MM-DD" maxlength="10">
+  </div>
+  <button id="go">进 入</button>
+  <p id="err">再想想，不是这个日子</p>
+  <p class="forgot">想不起来了？<a id="tip">给你一点提示</a></p>
 </div>
 
+<div id="final">
+  <p class="sub" id="sub1"></p>
+  <p class="sub2" id="sub2"></p>
+</div>
+
+<div id="fade"></div>
+
 <script>
+var CONFIG = {
+  answer: "20071206",
+  word: "生日快乐",
+  sub1: "2007.12.06",
+  sub2: "第 十 九 个 冬 天",
+  home: "home.html"
+};
+
 (function(){
-  var c = document.getElementById('sky'), x = c.getContext('2d');
-  var stars = [], W = 0, H = 0, dpr = Math.min(devicePixelRatio || 1, 2);
+  var cv = document.getElementById("cv");
+  var ctx = cv.getContext("2d");
+  var W = 0, H = 0;
+  var stars = [], parts = [], meteors = [];
+  var phase = "gate";
+  var T0 = 0;
+  var raf = null;
+
   function resize(){
-    W = c.width = innerWidth * dpr;
-    H = c.height = innerHeight * dpr;
-    c.style.width = innerWidth + 'px';
-    c.style.height = innerHeight + 'px';
+    W = cv.width = innerWidth;
+    H = cv.height = innerHeight;
+    buildStars();
+  }
+
+  function buildStars(){
     stars = [];
-    var n = Math.round((innerWidth * innerHeight) / 9000);
+    var n = Math.round(W * H / 5200);
+    if (n > 320) n = 320;
     for (var i = 0; i < n; i++){
       stars.push({
-        x: Math.random() * W,
-        y: Math.random() * H,
-        r: (Math.random() * 1.3 + .3) * dpr,
-        a: Math.random() * .6 + .15,
-        s: Math.random() * .015 + .004
+        x: Math.random() * W, y: Math.random() * H,
+        r: Math.random() * 1.1 + .25,
+        a: Math.random() * .45 + .08,
+        s: Math.random() * .0012 + .0004,
+        p: Math.random() * 6.28
       });
     }
   }
-  function draw(t){
-    x.clearRect(0, 0, W, H);
+
+  /* ---- 把文字画到离屏画布，再按像素取样，变成粒子目标点 ---- */
+  function textPoints(cx, cy, size, gap){
+    var off = document.createElement("canvas");
+    off.width = W; off.height = H;
+    var o = off.getContext("2d");
+    o.fillStyle = "#fff";
+    o.font = "600 " + size + 'px "Songti SC","Noto Serif SC",Georgia,serif';
+    o.textAlign = "center";
+    o.textBaseline = "middle";
+    o.fillText(CONFIG.word, cx, cy);
+    var data = o.getImageData(0, 0, W, H).data;
+    var pts = [];
+    for (var y = 0; y < H; y += gap){
+      for (var x = 0; x < W; x += gap){
+        if (data[(y * W + x) * 4 + 3] > 130) pts.push({ x: x, y: y });
+      }
+    }
+    return pts;
+  }
+
+  function startShow(){
+    if (phase !== "gate") return;
+    phase = "burst";
+    T0 = performance.now();
+
+    var cx = W / 2, cy = H / 2;
+    var size = Math.min(W * 0.19, H * 0.26, 168);
+    var gap = Math.max(3, Math.round(size / 24));
+    var pts = textPoints(cx, cy, size, gap);
+    if (!pts.length) pts = [{ x: cx, y: cy }];
+
+    // 打乱目标点，避免粒子按顺序排队
+    for (var i = pts.length - 1; i > 0; i--){
+      var k = Math.floor(Math.random() * (i + 1));
+      var tmp = pts[i]; pts[i] = pts[k]; pts[k] = tmp;
+    }
+
+    var count = Math.min(pts.length, 1500);
+    parts = [];
+    for (var n = 0; n < count; n++){
+      var ang = Math.random() * Math.PI * 2;
+      var sp = Math.random() * 5.5 + 1.2;
+      parts.push({
+        x: cx, y: cy,
+        vx: Math.cos(ang) * sp,
+        vy: Math.sin(ang) * sp,
+        sx: 0, sy: 0,
+        tx: pts[n].x, ty: pts[n].y,
+        r: Math.random() * 1.5 + .6,
+        d: Math.random() * 260
+      });
+    }
+
+    document.getElementById("gate").classList.add("gone");
+    setTimeout(function(){ document.getElementById("gate").style.display = "none"; }, 800);
+  }
+
+  function easeOut(t){ return 1 - Math.pow(1 - t, 3); }
+
+  function tick(now){
+    var t = (now - T0) / 1000;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // 背景星
     for (var i = 0; i < stars.length; i++){
       var s = stars[i];
-      var al = s.a + Math.sin(t * s.s + i) * .22;
-      x.beginPath();
-      x.arc(s.x, s.y, s.r, 0, 6.2832);
-      x.fillStyle = 'rgba(240,214,170,' + Math.max(0, al) + ')';
-      x.fill();
+      var al = s.a + Math.sin(now * s.s + s.p) * .18;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, 6.2832);
+      ctx.fillStyle = "rgba(226,214,190," + Math.max(0, al) + ")";
+      ctx.fill();
     }
-    requestAnimationFrame(draw);
-  }
-  addEventListener('resize', resize);
-  resize();
-  requestAnimationFrame(draw);
 
-  // 卡片跟随鼠标的高光
-  document.querySelectorAll('.card').forEach(function(el){
-    el.addEventListener('pointermove', function(e){
-      var r = el.getBoundingClientRect();
-      el.style.setProperty('--mx', (e.clientX - r.left) + 'px');
-      el.style.setProperty('--my', (e.clientY - r.top) + 'px');
-    });
+    if (phase === "gate"){
+      // 微弱的呼吸光
+      var glow = 0.06 + Math.sin(now * 0.0015) * 0.03;
+      var g = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * .5);
+      g.addColorStop(0, "rgba(240,201,135," + glow + ")");
+      g.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+      raf = requestAnimationFrame(tick);
+      return;
+    }
+
+    // 爆发 -> 汇聚
+    var gatherAt = 0.95;
+    var gatherDur = 1.15;
+    var p = 0;
+    if (t > gatherAt) p = Math.min(1, (t - gatherAt) / gatherDur);
+
+    for (var j = 0; j < parts.length; j++){
+      var pt = parts[j];
+      if (t < gatherAt){
+        // 自由飞散，带阻力
+        pt.x += pt.vx;
+        pt.y += pt.vy;
+        pt.vx *= 0.985;
+        pt.vy *= 0.985;
+      } else {
+        if (!pt.sx){ pt.sx = pt.x; pt.sy = pt.y; }
+        var e = easeOut(p);
+        pt.x = pt.sx + (pt.tx - pt.sx) * e;
+        pt.y = pt.sy + (pt.ty - pt.sy) * e;
+      }
+      var alpha = p > 0.06 ? 0.92 : 0.55;
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, pt.r, 0, 6.2832);
+      ctx.fillStyle = "rgba(245,214,160," + alpha + ")";
+      ctx.fill();
+    }
+
+    // 汇聚完成后，给文字一层光晕
+    if (p > 0.9){
+      ctx.globalCompositeOperation = "lighter";
+      ctx.filter = "blur(8px)";
+      for (var m = 0; m < parts.length; m += 3){
+        var q = parts[m];
+        ctx.beginPath();
+        ctx.arc(q.x, q.y, q.r * 2.2, 0, 6.2832);
+        ctx.fillStyle = "rgba(240,180,110,0.10)";
+        ctx.fill();
+      }
+      ctx.filter = "none";
+      ctx.globalCompositeOperation = "source-over";
+    }
+
+    // 流星雨
+    if (t > 2.35 && meteors.length < 26 && Math.random() < 0.30){
+      meteors.push({
+        x: Math.random() * W * 0.9 + W * 0.15,
+        y: -40 - Math.random() * 120,
+        vx: -(Math.random() * 3.2 + 3.4),
+        vy: Math.random() * 4.2 + 5.2,
+        life: 1,
+        len: Math.random() * 90 + 110
+      });
+    }
+    for (var k = meteors.length - 1; k >= 0; k--){
+      var mt = meteors[k];
+      mt.x += mt.vx;
+      mt.y += mt.vy;
+      mt.life -= 0.0075;
+      if (mt.life <= 0 || mt.y > H + 200 || mt.x < -300){
+        meteors.splice(k, 1);
+        continue;
+      }
+      var grad = ctx.createLinearGradient(mt.x, mt.y, mt.x - mt.vx * 15, mt.y - mt.vy * 15);
+      grad.addColorStop(0, "rgba(255,248,230," + mt.life * 0.95 + ")");
+      grad.addColorStop(0.3, "rgba(240,200,140," + mt.life * 0.42 + ")");
+      grad.addColorStop(1, "rgba(240,200,140,0)");
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 1.7;
+      ctx.beginPath();
+      ctx.moveTo(mt.x, mt.y);
+      ctx.lineTo(mt.x - mt.vx * 15, mt.y - mt.vy * 15);
+      ctx.stroke();
+    }
+
+    // 字幕
+    if (t > 2.6){
+      document.getElementById("final").classList.add("on");
+    }
+    if (t > 6.4){
+      document.getElementById("fade").classList.add("on");
+    }
+    if (t > 7.9){
+      location.href = CONFIG.home;
+      return;
+    }
+
+    raf = requestAnimationFrame(tick);
+  }
+
+  /* ---------- 输入交互 ---------- */
+  var inp = document.getElementById("dob");
+  var err = document.getElementById("err");
+  var go = document.getElementById("go");
+
+  inp.addEventListener("input", function(){
+    var v = inp.value.replace(/\D/g, "").slice(0, 8);
+    var out = v;
+    if (v.length > 4) out = v.slice(0, 4) + "-" + v.slice(4);
+    if (v.length > 6) out = v.slice(0, 4) + "-" + v.slice(4, 6) + "-" + v.slice(6);
+    inp.value = out;
+    err.classList.remove("show");
   });
+
+  function submit(){
+    var v = inp.value.replace(/\D/g, "");
+    if (v === CONFIG.answer){
+      startShow();
+    } else {
+      err.classList.add("show");
+      inp.classList.remove("shake");
+      void inp.offsetWidth;
+      inp.classList.add("shake");
+    }
+  }
+
+  go.addEventListener("click", submit);
+  inp.addEventListener("keydown", function(e){
+    if (e.key === "Enter") submit();
+  });
+
+  document.getElementById("tip").addEventListener("click", function(){
+    document.getElementById("tip").textContent = "2007 年的那个冬天";
+  });
+
+  document.getElementById("sub1").textContent = CONFIG.sub1;
+  document.getElementById("sub2").textContent = CONFIG.sub2;
+
+  addEventListener("resize", resize);
+  resize();
+  raf = requestAnimationFrame(tick);
 })();
 </script>
 </body>
