@@ -821,8 +821,10 @@ var CONFIG = {
     };
     var pr = null;
     try { pr = bgmEl.play(); } catch (e) {}
-    if (pr && pr.then) pr.then(begin).catch(function(){ setBgmBtn(false); armBgm(); });
+    if (pr && pr.then) pr.then(begin).catch(function(){ begin(); setBgmBtn(false); armBgm(); });
     else begin();
+    /* play() 的 promise 有时会卡在缓冲里不 settle，别让它把后面的流程堵死 */
+    setTimeout(begin, 600);
   }
 
   /* 只要往后够听十几秒就出声，最多等 3 秒；不追求整首缓冲完（浏览器本来就不会整首拉） */
