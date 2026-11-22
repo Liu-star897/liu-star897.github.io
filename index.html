@@ -808,7 +808,16 @@ var CONFIG = {
     var pr = null;
     try { pr = bgmEl.play(); } catch (e) {}
     if (pr && pr.then){
-      pr.then(start).catch(function(){ setBgmBtn(false); armBgm(); });
+      pr.then(start).catch(function(){
+        /* 个别内置浏览器不认 blob 音频，退回流式 */
+        if (bgmUsingBlob){
+          bgmUsingBlob = false;
+          try { bgmEl.src = BGM_SRC; bgmEl.load(); } catch (e) {}
+          setTimeout(function(){ playBgm(); }, 150);
+          return;
+        }
+        setBgmBtn(false); armBgm();
+      });
     } else {
       start();
     }
@@ -820,7 +829,8 @@ var CONFIG = {
   }
 
   /* 整首歌一次性拉进内存，之后播放完全不碰网络——流式播放会因分片请求时快时慢而断断续续 */
-  var bgmBlobUrl = null, bgmFetching = false, bgmStarted = false;
+  var BGM_SRC = "bgm/9-teen.mp3";
+  var bgmBlobUrl = null, bgmFetching = false, bgmStarted = false, bgmUsingBlob = false;
   function startBgmOnce(){
     if (bgmStarted) return;
     bgmStarted = true;
@@ -835,6 +845,7 @@ var CONFIG = {
       .then(function(b){
         bgmFetching = false;
         bgmBlobUrl = URL.createObjectURL(b);
+        bgmUsingBlob = true;
         if (bgmEl.paused){
           bgmEl.src = bgmBlobUrl;
           bgmEl.load();
@@ -1006,7 +1017,7 @@ var CONFIG = {
       setTimeout(function(){ tapEl.style.display = "none"; }, 950);
       prefetchBgm();
       /* 先在内存里把歌备好；两秒半还没下完就先流播，别让人干等 */
-      setTimeout(startBgmOnce, 2500);
+      setTimeout(startBgmOnce, 6000);
       startShow();
     });
   }
