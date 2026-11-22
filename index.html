@@ -279,7 +279,7 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:
 <div id="fade"></div>
 <div id="skip">跳 过 →</div>
 <div id="music">♪</div>
-<audio id="bgm" src="bgm/9-teen.mp3?v=2" preload="auto" loop playsinline></audio>
+<audio id="bgm" preload="none" loop playsinline></audio>
 
 <script>
 var CONFIG = {
@@ -761,6 +761,38 @@ var CONFIG = {
   /* ---------- 背景音乐（本地 mp3） ---------- */
   var bgmEl = document.getElementById("bgm");
   var bgmTimer = null, bgmArmed = false, bgmStarted = false;
+  var BGM_BASE = "bgm/9-teen.mp3?v=2";
+  var bgmBlobUrl = null, bgmFetching = false;
+
+  /* 整首先抓成 blob 存在本地内存：之后播放不再边下边卡 */
+  function prefetchBgm(){
+    if (bgmFetching || bgmBlobUrl) return;
+    if (!window.fetch || !window.URL || !URL.createObjectURL) return;
+    bgmFetching = true;
+    fetch(BGM_BASE).then(function(r){
+      if (!r.ok) throw new Error("bgm " + r.status);
+      return r.blob();
+    }).then(function(b){
+      if (!b || b.size < 1024) throw new Error("bgm empty");
+      bgmBlobUrl = URL.createObjectURL(b);
+      console.log("[bgm] blob ok", b.size);
+      adoptBlob();
+    }).catch(function(e){ bgmFetching = false; console.log("[bgm] blob fail", e && e.message); });
+  }
+
+  /* blob 到手：没开播就直接换成它；已经在播就原地换过去，播放位置不跳 */
+  function adoptBlob(){
+    if (!bgmBlobUrl || !bgmEl) return;
+    if ((bgmEl.src || "").indexOf("blob:") === 0) return;
+    if (!bgmStarted){ try { bgmEl.src = bgmBlobUrl; } catch (e) {} return; }
+    var at = bgmEl.currentTime || BGM_START, vol = bgmEl.volume, playing = !bgmEl.paused;
+    bgmEl.addEventListener("loadedmetadata", function(){
+      try { bgmEl.currentTime = Math.max(BGM_START, at); } catch (e) {}
+      try { bgmEl.volume = vol; } catch (e) {}
+      if (playing){ var p = bgmEl.play(); if (p && p.catch) p.catch(function(){}); }
+    }, { once: true });
+    try { bgmEl.src = bgmBlobUrl; bgmEl.load(); } catch (e) {}
+  }
 
   function setBgmBtn(on){
     var btn = document.getElementById("music");
@@ -804,6 +836,8 @@ var CONFIG = {
   function playBgm(){
     if (!bgmEl) return;
     bgmStarted = true;
+    if (!bgmEl.src){ try { bgmEl.src = bgmBlobUrl || BGM_BASE; } catch (e) {} }
+    console.log("[bgm] play src", bgmEl.src.slice(0, 40));
     var seek = function(){
       try { if (bgmEl.currentTime < BGM_START - 0.1) bgmEl.currentTime = BGM_START; } catch (e) {}
     };
@@ -830,12 +864,12 @@ var CONFIG = {
       if (done) return;
       done = true;
       if (iv) clearInterval(iv);
-      if (bgmEl.paused) return;
       try { bgmEl.currentTime = BGM_START; } catch (e) {}
+      if (bgmEl.paused){ var p = bgmEl.play(); if (p && p.catch) p.catch(function(){}); }
       fadeBgmTo(0.5, 1200);
     };
     iv = setInterval(function(){
-      if (bgmEl.paused){ done = true; clearInterval(iv); return; }
+      if (bgmBlobUrl){ reveal(); return; }
       var d = 0, bf = 0, cur = 0;
       try {
         d = bgmEl.duration || 0;
@@ -995,6 +1029,7 @@ var CONFIG = {
 
   window.addEventListener("resize", resize);
   resize();
+  prefetchBgm();
 
   var tapEl = document.getElementById("tap");
   if (tapEl){
