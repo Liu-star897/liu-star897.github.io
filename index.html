@@ -7,93 +7,89 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='24' font-size='24'%3E%E2%9C%A8%3C/text%3E%3C/svg%3E">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{height:100%;overflow:hidden;background:#02040a}
-body{
-  font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
-  color:#e8eaf2;-webkit-font-smoothing:antialiased;
-}
-#cv{position:fixed;inset:0;display:block}
+html,body{height:100%;overflow:hidden;background:#000206}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:#e8eaf2;-webkit-font-smoothing:antialiased}
+#cv{position:fixed;inset:0;display:block;width:100%;height:100%}
 
+/* ---------- 输入 ---------- */
 #gate{
   position:fixed;inset:0;z-index:6;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:24px;text-align:center;
-  transition:opacity .7s ease,transform .7s ease;
+  transition:opacity .9s ease,transform .9s ease;
 }
-#gate.gone{opacity:0;transform:scale(1.08);pointer-events:none}
-.hint{font-size:13px;letter-spacing:.3em;color:#7d88a8;margin-bottom:34px}
+#gate.gone{opacity:0;transform:scale(1.05);pointer-events:none}
+.hint{font-size:12px;letter-spacing:.34em;color:#6f7b9c;margin-bottom:36px}
 .field{position:relative;width:min(320px,80vw)}
 #dob{
-  width:100%;background:transparent;border:0;border-bottom:1px solid rgba(240,201,135,.28);
-  color:#f0c987;font-size:26px;letter-spacing:.14em;text-align:center;
+  width:100%;background:transparent;border:0;border-bottom:1px solid rgba(214,228,255,.22);
+  color:#dce6ff;font-size:25px;letter-spacing:.16em;text-align:center;
   padding:12px 4px;outline:none;font-family:inherit;
-  transition:border-color .4s,box-shadow .4s;
+  transition:border-color .45s,box-shadow .45s;
 }
-#dob::placeholder{color:#3d4660;letter-spacing:.12em;font-size:22px}
-#dob:focus{border-color:rgba(240,201,135,.85);box-shadow:0 12px 40px -18px rgba(240,201,135,.6)}
+#dob::placeholder{color:#2f3752;letter-spacing:.14em;font-size:20px}
+#dob:focus{border-color:rgba(214,228,255,.6);box-shadow:0 14px 44px -20px rgba(150,190,255,.55)}
 #go{
   margin-top:38px;padding:11px 34px;border-radius:999px;cursor:pointer;
-  background:transparent;border:1px solid rgba(240,201,135,.32);
-  color:#f0c987;font-size:13px;letter-spacing:.28em;font-family:inherit;
-  transition:.35s;
+  background:transparent;border:1px solid rgba(214,228,255,.22);
+  color:#c9d5ee;font-size:12px;letter-spacing:.3em;font-family:inherit;
+  transition:.4s;
 }
-#go:hover{border-color:#f0c987;background:rgba(240,201,135,.08)}
-#err{height:20px;margin-top:16px;font-size:12px;color:#cf7a7a;letter-spacing:.1em;opacity:0;transition:.3s}
+#go:hover{border-color:rgba(214,228,255,.55);background:rgba(214,228,255,.05)}
+#err{height:20px;margin-top:16px;font-size:11px;color:#b06b6b;letter-spacing:.12em;opacity:0;transition:.35s}
 #err.show{opacity:1}
 .shake{animation:shake .45s}
 @keyframes shake{
   0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}
   40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}
 }
-.forgot{margin-top:44px;font-size:11px;color:#39415a;letter-spacing:.1em}
-.forgot a{color:#5c6684;cursor:pointer;text-decoration:underline;text-underline-offset:4px}
+.forgot{margin-top:46px;font-size:11px;color:#2c3348;letter-spacing:.1em}
+.forgot a{color:#4e5875;cursor:pointer;text-decoration:underline;text-underline-offset:4px}
 
-/* 标题卡 */
+/* ---------- 标题卡 ---------- */
 #card{
   position:fixed;inset:0;z-index:4;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:24px;text-align:center;
-  opacity:0;pointer-events:none;transition:opacity 1.2s ease;
+  opacity:0;pointer-events:none;transform:translateY(12px);
+  transition:opacity 2.4s cubic-bezier(.22,.61,.36,1),transform 2.4s cubic-bezier(.22,.61,.36,1);
 }
-#card.on{opacity:1;pointer-events:auto}
+#card.on{opacity:1;pointer-events:auto;transform:none}
 #card h1{
-  font-family:"Songti SC","Noto Serif SC",Georgia,serif;
-  font-size:clamp(26px,5.4vw,58px);font-weight:600;letter-spacing:.14em;
-  color:#fff;line-height:1.35;
-  text-shadow:0 0 24px rgba(160,200,255,.65),0 0 70px rgba(90,150,255,.35);
+  font-family:"Songti SC","Noto Serif SC","STSong",Georgia,serif;
+  font-weight:400;font-size:clamp(24px,5.8vw,54px);letter-spacing:.15em;
+  color:#eaf1ff;margin-bottom:30px;
+  text-shadow:0 0 60px rgba(130,175,255,.32);
 }
-#card .t1{
-  margin-top:30px;font-size:clamp(13px,1.9vw,17px);letter-spacing:.14em;
-  color:#dbe6ff;text-shadow:0 0 18px rgba(120,170,255,.5);
-}
-#card .t2{
-  margin-top:14px;font-size:clamp(12px,1.7vw,15px);letter-spacing:.14em;
-  color:#b9c9ea;text-shadow:0 0 16px rgba(100,150,255,.4);
-}
+#card .t1{font-size:clamp(13px,2.1vw,17px);letter-spacing:.12em;color:#c3d0ea;margin-bottom:14px}
+#card .t2{font-size:clamp(12px,1.9vw,15px);letter-spacing:.12em;color:#9fb0cf;margin-bottom:44px}
 #next{
-  margin-top:46px;padding:12px 40px;border-radius:999px;cursor:pointer;
-  background:rgba(255,196,120,.14);border:1px solid rgba(255,206,140,.6);
-  color:#ffe7bb;font-size:13px;letter-spacing:.32em;font-family:inherit;
-  box-shadow:0 0 40px rgba(255,190,110,.28);
-  transition:.35s;
+  padding:12px 40px;border-radius:999px;cursor:pointer;font-family:inherit;
+  background:transparent;border:1px solid rgba(214,228,255,.28);
+  color:#dbe5f8;font-size:12px;letter-spacing:.3em;transition:.4s;
 }
-#next:hover{background:rgba(255,196,120,.26);box-shadow:0 0 60px rgba(255,190,110,.5)}
-#card .tip{margin-top:16px;font-size:11px;letter-spacing:.24em;color:#5d6b8f}
+#next:hover{border-color:rgba(214,228,255,.65);background:rgba(214,228,255,.06);box-shadow:0 0 40px -12px rgba(150,190,255,.5)}
+#card .tip{margin-top:18px;font-size:10px;letter-spacing:.24em;color:#3a4258}
 
+/* ---------- 结尾 ---------- */
 #final{
-  position:fixed;inset:0;z-index:2;display:flex;flex-direction:column;
-  align-items:center;justify-content:flex-end;padding-bottom:13vh;
-  opacity:0;pointer-events:none;transition:opacity 1.1s ease;
+  position:fixed;inset:0;z-index:5;pointer-events:none;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+  padding-bottom:13vh;
+  opacity:0;transition:opacity 1.8s ease;
 }
 #final.on{opacity:1}
-#final .sub{font-size:12px;letter-spacing:.42em;color:#c9a86e}
-#final .sub2{margin-top:14px;font-size:11px;letter-spacing:.3em;color:#5a6485}
-#fade{position:fixed;inset:0;z-index:8;background:#02040a;opacity:0;pointer-events:none;transition:opacity 1.2s ease}
+#final .sub{font-size:12px;letter-spacing:.42em;color:#8fa0c2;margin-bottom:12px}
+#final .sub2{font-size:10px;letter-spacing:.3em;color:#4d5776}
+
+#fade{position:fixed;inset:0;z-index:9;background:#000206;opacity:0;pointer-events:none;transition:opacity 1.9s ease}
 #fade.on{opacity:1}
 #skip{
-  position:fixed;right:20px;bottom:18px;z-index:7;font-size:11px;letter-spacing:.18em;
-  color:#3f4864;cursor:pointer;display:none;
+  position:fixed;right:22px;bottom:20px;z-index:8;display:none;
+  font-size:11px;letter-spacing:.22em;color:#39415a;cursor:pointer;padding:8px;
+  transition:color .3s;
 }
+#skip:hover{color:#7d88a8}
 </style>
 </head>
 <body>
@@ -127,44 +123,109 @@ body{
 
 <script>
 var CONFIG = {
+  needCode: false,
   answer: "20071206",
   sub1: "2007.12.06",
   sub2: "生 日 快 乐 · 第 十 九 个 冬 天",
-  home: "home.html"
+  home: "home.html",
+  WARP: 1.6,
+  RAIN: 5.8,
+  BURST: 6.6
 };
 
 (function(){
   var cv = document.getElementById("cv");
-  var ctx = cv.getContext("2d");
-  var W = 0, H = 0;
-  var stars = [], parts = [], meteors = [], warp = [];
-  var phase = "gate";
-  var T0 = 0, P0 = 0;
-  var WARP = 1.2;
-  var RAIN = 3.4;
-  var bgGrad = null;
+  var ctx = cv.getContext("2d", { alpha: false });
+  var W = 0, H = 0, DPR = 1;
+  var bgCv = null;
 
+  var twinkle = [], warp = [], meteors = [], parts = [], trails = [];
+  var phase = "init", tPhase = 0, lastMs = 0;
+  var spawnAcc = 0;
+
+  var RAD = Math.PI * 0.655;
+
+  /* ---------- 尺寸与静态背景 ---------- */
   function resize(){
-    W = cv.width = innerWidth;
-    H = cv.height = innerHeight;
-    buildStars();
-    bgGrad = ctx.createRadialGradient(W * 0.5, H * 0.42, 0, W * 0.5, H * 0.42, Math.max(W, H) * 0.9);
-    bgGrad.addColorStop(0, "#0a1836");
-    bgGrad.addColorStop(0.45, "#050b1c");
-    bgGrad.addColorStop(1, "#010206");
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    W = window.innerWidth; H = window.innerHeight;
+    cv.width = Math.round(W * DPR);
+    cv.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    buildBG();
+    buildTwinkle();
   }
 
-  function buildStars(){
-    stars = [];
-    var n = Math.round(W * H / 3600);
-    if (n > 320) n = 320;
+  function buildBG(){
+    bgCv = document.createElement("canvas");
+    bgCv.width = cv.width; bgCv.height = cv.height;
+    var b = bgCv.getContext("2d");
+    b.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+    var g = b.createRadialGradient(W * 0.52, H * 0.38, 0, W * 0.52, H * 0.38, Math.max(W, H) * 1.08);
+    g.addColorStop(0, "#0a1530");
+    g.addColorStop(0.42, "#040b1c");
+    g.addColorStop(1, "#000206");
+    b.fillStyle = g;
+    b.fillRect(0, 0, W, H);
+
+    /* 星云斑 */
+    for (var k = 0; k < 3; k++){
+      var nx = W * (0.2 + Math.random() * 0.6);
+      var ny = H * (0.1 + Math.random() * 0.5);
+      var nr = Math.max(W, H) * (0.18 + Math.random() * 0.22);
+      var ng = b.createRadialGradient(nx, ny, 0, nx, ny, nr);
+      ng.addColorStop(0, "rgba(70,96,180,0.055)");
+      ng.addColorStop(0.55, "rgba(50,70,150,0.022)");
+      ng.addColorStop(1, "rgba(20,30,80,0)");
+      b.fillStyle = ng;
+      b.fillRect(0, 0, W, H);
+    }
+
+    b.globalCompositeOperation = "lighter";
+
+    /* 银河带 */
+    var ax = W * 0.08, ay = -H * 0.08, bx = W * 1.02, by = H * 1.08;
+    var ang = Math.atan2(by - ay, bx - ax);
+    var px = Math.cos(ang + Math.PI / 2), py = Math.sin(ang + Math.PI / 2);
+    var n = Math.min(1500, Math.round(W * H / 900));
     for (var i = 0; i < n; i++){
-      stars.push({
+      var t = Math.random();
+      var ox = (Math.random() + Math.random() + Math.random() + Math.random() - 2);
+      var spread = 42 + Math.random() * 136;
+      var x = ax + (bx - ax) * t + px * ox * spread + (Math.random() - .5) * 26;
+      var y = ay + (by - ay) * t + py * ox * spread + (Math.random() - .5) * 26;
+      var a = 0.014 + Math.random() * 0.07;
+      b.beginPath();
+      b.arc(x, y, 0.25 + Math.random() * 0.85, 0, 6.2832);
+      b.fillStyle = "rgba(176,202,255," + a.toFixed(4) + ")";
+      b.fill();
+    }
+
+    /* 远景星 */
+    var ns = Math.min(420, Math.round(W * H / 3400));
+    for (var j = 0; j < ns; j++){
+      var sx = Math.random() * W, sy = Math.random() * H;
+      var sr = 0.25 + Math.random() * 0.85;
+      var sa = 0.05 + Math.random() * 0.3;
+      b.beginPath();
+      b.arc(sx, sy, sr, 0, 6.2832);
+      b.fillStyle = "rgba(206,222,255," + sa.toFixed(3) + ")";
+      b.fill();
+    }
+    b.globalCompositeOperation = "source-over";
+  }
+
+  function buildTwinkle(){
+    twinkle = [];
+    var n = Math.min(90, Math.round(W * H / 14000));
+    for (var i = 0; i < n; i++){
+      twinkle.push({
         x: Math.random() * W, y: Math.random() * H,
-        r: Math.random() * 1.2 + .2,
-        a: Math.random() * .55 + .08,
-        s: Math.random() * .0012 + .0003,
-        p: Math.random() * 6.28
+        r: 0.5 + Math.random() * 1.15,
+        a: 0.2 + Math.random() * 0.5,
+        s: 0.5 + Math.random() * 1.4,
+        p: Math.random() * 6.2832
       });
     }
   }
@@ -179,14 +240,14 @@ var CONFIG = {
     o.textBaseline = "middle";
     for (var i = 0; i < lines.length; i++){
       var ln = lines[i];
-      o.font = "600 " + ln.size + 'px "Songti SC","Noto Serif SC",Georgia,serif';
+      o.font = "400 " + ln.size + 'px "Songti SC","Noto Serif SC","STSong",Georgia,serif';
       o.fillText(ln.text, W / 2, H / 2 + ln.dy);
     }
     var data = o.getImageData(0, 0, W, H).data;
     var pts = [];
     for (var y = 0; y < H; y += gap){
       for (var x = 0; x < W; x += gap){
-        if (data[(y * W + x) * 4 + 3] > 130) pts.push({ x: x, y: y });
+        if (data[(y * W + x) * 4 + 3] > 128) pts.push({ x: x, y: y });
       }
     }
     return pts;
@@ -195,239 +256,310 @@ var CONFIG = {
   /* ---------- 穿越 ---------- */
   function buildWarp(){
     warp = [];
-    for (var i = 0; i < 300; i++){
+    for (var i = 0; i < 340; i++){
       warp.push({
         a: Math.random() * 6.2832,
-        r: Math.random() * 26 + 4,
-        sp: Math.random() * 0.75 + 0.5
+        r: Math.random() * Math.max(W, H) * 0.62 + 6,
+        sp: 0.45 + Math.random() * 0.9,
+        w: 0.5 + Math.random() * 1.1,
+        al: 0.3 + Math.random() * 0.55
       });
     }
   }
 
-  function drawWarp(t){
-    var cx = W / 2, cy = H / 2;
-    var k = Math.min(1, t / WARP);
-    var boost = 1 + k * k * 11;
-    var lim = Math.max(W, H) * 1.2;
+  function drawWarp(dt, p){
+    var cx = W * 0.5, cy = H * 0.46;
+    var boost = 1 + Math.pow(p, 1.7) * 26;
+    var lim = Math.max(W, H) * 1.25;
+    var fade = p < 0.82 ? 1 : Math.max(0, (1 - p) / 0.18);
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.lineCap = "round";
     for (var i = 0; i < warp.length; i++){
       var s = warp[i];
-      s.r += (s.r * 0.085 + 0.7) * s.sp * boost;
-      if (s.r > lim){ s.r = Math.random() * 18 + 4; }
-      var x = cx + Math.cos(s.a) * s.r * 1.4;
-      var y = cy + Math.sin(s.a) * s.r;
-      var px = cx + Math.cos(s.a) * s.r * 0.80 * 1.4;
-      var py = cy + Math.sin(s.a) * s.r * 0.80;
-      var a = Math.min(1, s.r / 110) * (0.30 + 0.70 * k);
-      ctx.beginPath();
-      ctx.moveTo(px, py);
-      ctx.lineTo(x, y);
-      ctx.strokeStyle = "rgba(198,220,255," + (a * 0.75) + ")";
-      ctx.lineWidth = 1.2;
-      ctx.stroke();
+      var pr = s.r;
+      s.r += (s.r * 0.10 + 1.4) * s.sp * boost * dt;
+      if (s.r > lim){ s.r = Math.random() * 16 + 3; pr = s.r; }
+      var cos = Math.cos(s.a), sin = Math.sin(s.a);
+      var x = cx + cos * s.r * 1.45, y = cy + sin * s.r;
+      var px = cx + cos * pr * 1.45, py = cy + sin * pr;
+      var len = Math.hypot(x - px, y - py);
+      var a = Math.min(1, (s.r / 150)) * s.al * fade;
+      if (len < 2){
+        ctx.fillStyle = "rgba(226,238,255," + (a * 0.9).toFixed(3) + ")";
+        ctx.beginPath(); ctx.arc(x, y, s.w * 0.9, 0, 6.2832); ctx.fill();
+        continue;
+      }
+      var g = ctx.createLinearGradient(px, py, x, y);
+      g.addColorStop(0, "rgba(190,214,255,0)");
+      g.addColorStop(0.7, "rgba(206,226,255," + (a * 0.55).toFixed(3) + ")");
+      g.addColorStop(1, "rgba(238,246,255," + a.toFixed(3) + ")");
+      ctx.strokeStyle = g;
+      ctx.lineWidth = s.w;
+      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(x, y); ctx.stroke();
     }
+    ctx.restore();
   }
 
-  /* ---------- 流星雨 ---------- */
+  /* ---------- 流星 ---------- */
   function spawnMeteor(){
-    var side = Math.random();
+    var big = Math.random() < 0.05;
+    var ang = RAD + (Math.random() - 0.5) * (big ? 0.5 : 0.3);
+    var sp = (big ? 780 : 430) + Math.random() * (big ? 600 : 560);
     var x, y;
-    if (side < 0.62){
-      x = Math.random() * W * 1.25;
-      y = -30 - Math.random() * H * 0.35;
+    var r0 = Math.random();
+    if (r0 < 0.30){
+      x = Math.random() * W * 1.18 - W * 0.06;
+      y = Math.random() * H * 0.92;
+    } else if (r0 < 0.78){
+      x = Math.random() * (W * 1.25) - W * 0.1;
+      y = -30 - Math.random() * H * 0.8;
     } else {
-      x = W + Math.random() * 220;
-      y = Math.random() * H * 0.6;
+      x = W + 30 + Math.random() * 190;
+      y = Math.random() * H * 0.8 - 40;
     }
-    var speed = Math.random() * 6 + 6;
+    var pick = Math.random();
+    var col = pick < 0.6 ? [232, 242, 255] : pick < 0.85 ? [206, 232, 255] : [255, 234, 204];
     meteors.push({
       x: x, y: y,
-      vx: -speed * 0.78,
-      vy: speed,
+      vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp,
+      len: (big ? 250 : 96) + Math.random() * (big ? 210 : 170),
+      w: (big ? 1.8 : 0.95) + Math.random() * (big ? 0.8 : 0.6),
+      a: (big ? 0.95 : 0.64) + Math.random() * (big ? 0.05 : 0.22),
       life: 1,
-      fade: Math.random() * 0.004 + 0.004,
-      w: Math.random() * 1.4 + 1.1,
-      tail: Math.random() * 18 + 16
+      age: 0,
+      dec: (big ? 0.38 : 0.55) + Math.random() * (big ? 0.25 : 0.4),
+      big: big, c: col
     });
   }
 
-  function drawMeteors(){
-    for (var k = meteors.length - 1; k >= 0; k--){
-      var mt = meteors[k];
-      mt.x += mt.vx;
-      mt.y += mt.vy;
-      mt.life -= mt.fade;
-      if (mt.life <= 0 || mt.y > H + 300 || mt.x < -400){
-        meteors.splice(k, 1);
+  function drawMeteors(dt){
+    for (var i = meteors.length - 1; i >= 0; i--){
+      var m = meteors[i];
+      m.x += m.vx * dt; m.y += m.vy * dt;
+      m.life -= m.dec * dt;
+      m.age += dt;
+      if (m.life <= 0 || m.y > H + 360 || m.x < -420){
+        if (m.life <= 0 && m.big) trails.push({ x: m.x, y: m.y, vx: m.vx, vy: m.vy, len: m.len, a: 0.12, c: m.c });
+        meteors.splice(i, 1);
         continue;
       }
-      var ex = mt.x - mt.vx * mt.tail;
-      var ey = mt.y - mt.vy * mt.tail;
-      var grad = ctx.createLinearGradient(mt.x, mt.y, ex, ey);
-      grad.addColorStop(0, "rgba(255,252,242," + mt.life + ")");
-      grad.addColorStop(0.18, "rgba(210,232,255," + (mt.life * 0.72) + ")");
-      grad.addColorStop(0.6, "rgba(150,190,255," + (mt.life * 0.22) + ")");
-      grad.addColorStop(1, "rgba(120,160,255,0)");
-      ctx.strokeStyle = grad;
-      ctx.lineWidth = mt.w;
+      var sp = Math.hypot(m.vx, m.vy) || 1;
+      var ux = m.vx / sp, uy = m.vy / sp;
+      var L = m.len * (0.42 + 0.58 * m.life);
+      var tx = m.x - ux * L, ty = m.y - uy * L;
+      var al = m.a * Math.min(1, m.life * 2.2) * Math.min(1, m.age / 0.18);
+      var c = m.c;
+      var g = ctx.createLinearGradient(m.x, m.y, tx, ty);
+      g.addColorStop(0, "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + al.toFixed(3) + ")");
+      g.addColorStop(0.10, "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + (al * 0.55).toFixed(3) + ")");
+      g.addColorStop(0.42, "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + (al * 0.24).toFixed(3) + ")");
+      g.addColorStop(1, "rgba(" + c[0] + "," + c[1] + "," + c[2] + ",0)");
+      ctx.strokeStyle = g;
+      ctx.lineWidth = m.w;
       ctx.lineCap = "round";
-      ctx.beginPath();
-      ctx.moveTo(mt.x, mt.y);
-      ctx.lineTo(ex, ey);
-      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(tx, ty); ctx.stroke();
+
+      if (m.big){
+        var hr = 10;
+        var hg = ctx.createRadialGradient(m.x, m.y, 0, m.x, m.y, hr);
+        hg.addColorStop(0, "rgba(255,255,255," + (al * 0.85).toFixed(3) + ")");
+        hg.addColorStop(0.35, "rgba(206,232,255," + (al * 0.22).toFixed(3) + ")");
+        hg.addColorStop(1, "rgba(170,205,255,0)");
+        ctx.fillStyle = hg;
+        ctx.beginPath(); ctx.arc(m.x, m.y, hr, 0, 6.2832); ctx.fill();
+      } else {
+        ctx.fillStyle = "rgba(240,247,255," + (al * 0.8).toFixed(3) + ")";
+        ctx.beginPath(); ctx.arc(m.x, m.y, Math.max(0.5, m.w * 0.7), 0, 6.2832); ctx.fill();
+      }
+    }
+
+    for (var k = trails.length - 1; k >= 0; k--){
+      var tr = trails[k];
+      tr.a -= dt * 0.09;
+      if (tr.a <= 0){ trails.splice(k, 1); continue; }
+      var s2 = Math.hypot(tr.vx, tr.vy) || 1;
+      var ex = tr.x - tr.vx / s2 * tr.len, ey = tr.y - tr.vy / s2 * tr.len;
+      var tg = ctx.createLinearGradient(tr.x, tr.y, ex, ey);
+      tg.addColorStop(0, "rgba(" + tr.c[0] + "," + tr.c[1] + "," + tr.c[2] + "," + tr.a.toFixed(3) + ")");
+      tg.addColorStop(1, "rgba(" + tr.c[0] + "," + tr.c[1] + "," + tr.c[2] + ",0)");
+      ctx.strokeStyle = tg;
+      ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.moveTo(tr.x, tr.y); ctx.lineTo(ex, ey); ctx.stroke();
     }
   }
 
-  /* ---------- 汇聚 ---------- */
-  function beginBurst(){
-    phase = "burst";
-    P0 = performance.now();
+  function rainRate(p){
+    var s = Math.sin(Math.PI * Math.pow(Math.min(1, p), 0.8));
+    return 3 + 33 * s;
+  }
 
-    var w1 = Math.min(W * 0.115, H * 0.15, 118);
-    var w2 = Math.min(W * 0.215, H * 0.27, 208);
-    var pts = textPoints([
-      { text: "生日快乐", size: w1, dy: -w2 * 0.72 },
-      { text: "葛成璐", size: w2, dy: w2 * 0.52 }
-    ], Math.max(3, Math.round(w2 / 34)));
+  function stepRain(dt, p){
+    spawnAcc += rainRate(p) * dt;
+    var guard = 0;
+    while (spawnAcc >= 1 && guard++ < 40){
+      spawnAcc -= 1;
+      if (meteors.length < 300) spawnMeteor();
+    }
+  }
+
+  /* ---------- 点阵汇聚 ---------- */
+  function beginBurst(){
+    phase = "burst"; tPhase = 0;
+    var w1 = Math.min(W * 0.105, H * 0.135, 112);
+    var w2 = Math.min(W * 0.205, H * 0.26, 200);
+    var lines = [
+      { text: "生日快乐", size: w1, dy: -w2 * 0.60 },
+      { text: "葛成璐", size: w2, dy: w2 * 0.47 }
+    ];
+    var gap = Math.max(3, Math.round(w2 / 50));
+    var pts = textPoints(lines, gap);
+    while (pts.length > 2400 && gap < 14){
+      gap += 1;
+      pts = textPoints(lines, gap);
+    }
 
     if (!pts.length) pts = [{ x: W / 2, y: H / 2 }];
     for (var i = pts.length - 1; i > 0; i--){
       var k = Math.floor(Math.random() * (i + 1));
       var tmp = pts[i]; pts[i] = pts[k]; pts[k] = tmp;
     }
-
-    var count = Math.min(pts.length, 1600);
+    var count = Math.min(pts.length, 2400);
     parts = [];
     for (var n = 0; n < count; n++){
       var edge = Math.random();
       var sx, sy;
-      if (edge < 0.5){ sx = Math.random() * W; sy = -20 - Math.random() * 120; }
-      else if (edge < 0.75){ sx = W + 20 + Math.random() * 120; sy = Math.random() * H; }
-      else { sx = -20 - Math.random() * 120; sy = Math.random() * H; }
+      if (edge < 0.42){ sx = Math.random() * W; sy = -20 - Math.random() * 110; }
+      else if (edge < 0.71){ sx = W + 20 + Math.random() * 110; sy = Math.random() * H; }
+      else if (edge < 0.9){ sx = -20 - Math.random() * 110; sy = Math.random() * H; }
+      else { sx = Math.random() * W; sy = H + 20 + Math.random() * 110; }
       parts.push({
-        x: sx, y: sy,
-        sx: sx, sy: sy,
+        x: sx, y: sy, sx: sx, sy: sy,
         tx: pts[n].x, ty: pts[n].y,
-        r: Math.random() * 1.4 + .55,
-        d: Math.random() * 0.35
+        r: Math.random() * 1.25 + 0.45,
+        d: Math.random() * 0.38
       });
     }
+    if (navigator.vibrate) { try { navigator.vibrate(16); } catch (e) {} }
   }
 
   function easeOut(t){ return 1 - Math.pow(1 - t, 3); }
 
-  function tick(now){
-    var t = (now - T0) / 1000;
-    ctx.fillStyle = "#000";
-    ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = bgGrad;
-    ctx.fillRect(0, 0, W, H);
+  /* ---------- 主循环 ---------- */
+  function render(dt, now){
+    ctx.drawImage(bgCv, 0, 0, W, H);
 
-    for (var i = 0; i < stars.length; i++){
-      var s = stars[i];
-      var al = s.a + Math.sin(now * s.s + s.p) * .2;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    for (var i = 0; i < twinkle.length; i++){
+      var s = twinkle[i];
+      var al = s.a * (0.45 + 0.55 * (0.5 + 0.5 * Math.sin(now * s.s + s.p)));
       ctx.beginPath();
       ctx.arc(s.x, s.y, s.r, 0, 6.2832);
-      ctx.fillStyle = "rgba(214,228,255," + Math.max(0, al) + ")";
+      ctx.fillStyle = "rgba(224,236,255," + al.toFixed(3) + ")";
       ctx.fill();
     }
-
-    if (phase === "gate"){
-      raf = requestAnimationFrame(tick);
-      return;
-    }
+    ctx.restore();
 
     if (phase === "warp"){
-      drawWarp(t);
-      if (t > WARP){
-        phase = "rain";
-        T0 = performance.now();
-        for (var q = 0; q < 40; q++) spawnMeteor();
-      }
-      raf = requestAnimationFrame(tick);
+      var p = Math.min(1, tPhase / CONFIG.WARP);
+      drawWarp(dt, p);
+      if (p >= 1){ phase = "rain"; tPhase = 0; spawnAcc = 0; }
       return;
     }
 
     if (phase === "rain"){
-      var dens = Math.min(1, t / (RAIN * 0.55));
-      if (meteors.length < 220 && Math.random() < 0.55 * dens) spawnMeteor();
-      if (meteors.length < 220 && Math.random() < 0.35 * dens) spawnMeteor();
-      drawMeteors();
-      if (t > RAIN){
-        phase = "card";
+      var p2 = Math.min(1, tPhase / CONFIG.RAIN);
+      stepRain(dt, p2);
+      drawMeteors(dt);
+      if (p2 >= 1){
+        phase = "card"; tPhase = 0;
         document.getElementById("card").classList.add("on");
         document.getElementById("skip").style.display = "block";
       }
-      raf = requestAnimationFrame(tick);
       return;
     }
 
     if (phase === "card"){
-      if (meteors.length < 140 && Math.random() < 0.35) spawnMeteor();
-      drawMeteors();
-      raf = requestAnimationFrame(tick);
+      spawnAcc += 2.6 * dt;
+      if (spawnAcc >= 1 && meteors.length < 110){ spawnAcc -= 1; spawnMeteor(); }
+      drawMeteors(dt);
       return;
     }
 
-    // burst
-    var pt2 = (now - P0) / 1000;
-    var p = Math.min(1, pt2 / 1.9);
-    if (meteors.length < 90 && Math.random() < 0.22) spawnMeteor();
-    drawMeteors();
+    /* burst */
+    spawnAcc += 1.4 * dt;
+    if (spawnAcc >= 1 && meteors.length < 70){ spawnAcc -= 1; spawnMeteor(); }
+    drawMeteors(dt);
 
+    var bp = Math.min(1, tPhase / 2.0);
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
     for (var j = 0; j < parts.length; j++){
-      var pt = parts[j];
-      var prog = Math.max(0, Math.min(1, (p - pt.d) / (1 - pt.d)));
+      var it = parts[j];
+      var prog = Math.max(0, Math.min(1, (bp - it.d) / (1 - it.d)));
       var e = easeOut(prog);
-      pt.x = pt.sx + (pt.tx - pt.sx) * e;
-      pt.y = pt.sy + (pt.ty - pt.sy) * e;
-      var alpha = 0.45 + 0.5 * e;
+      var px = it.sx + (it.tx - it.sx) * e;
+      var py = it.sy + (it.ty - it.sy) * e;
+      if (prog <= 0) continue;
+      var alpha = (0.25 + 0.62 * e);
+      // 汇聚途中拉出短迹
+      if (prog < 0.94){
+        var tailX = it.sx + (it.tx - it.sx) * Math.max(0, e - 0.06);
+        var tailY = it.sy + (it.ty - it.sy) * Math.max(0, e - 0.06);
+        ctx.beginPath();
+        ctx.moveTo(px, py); ctx.lineTo(tailX, tailY);
+        ctx.strokeStyle = "rgba(226,236,255," + (alpha * 0.35).toFixed(3) + ")";
+        ctx.lineWidth = it.r * 0.9;
+        ctx.stroke();
+      }
       ctx.beginPath();
-      ctx.arc(pt.x, pt.y, pt.r, 0, 6.2832);
-      ctx.fillStyle = "rgba(246,220,172," + alpha + ")";
+      ctx.arc(px, py, it.r, 0, 6.2832);
+      ctx.fillStyle = "rgba(" + (bp > 0.85 ? "255,244,222" : "214,230,255") + "," + alpha.toFixed(3) + ")";
       ctx.fill();
     }
+    ctx.restore();
 
-    if (p > 0.86){
-      ctx.globalCompositeOperation = "lighter";
-      ctx.fillStyle = "rgba(238,186,120,0.055)";
-      for (var m = 0; m < parts.length; m += 4){
-        var qq = parts[m];
-        ctx.beginPath();
-        ctx.arc(qq.x, qq.y, qq.r * 3.4, 0, 6.2832);
-        ctx.fill();
-      }
-      ctx.globalCompositeOperation = "source-over";
-    }
-
-    if (pt2 > 2.1){
-      document.getElementById("final").classList.add("on");
-    }
-    if (pt2 > 4.6){
-      document.getElementById("fade").classList.add("on");
-    }
-    if (pt2 > 5.9){
-      location.href = CONFIG.home;
-      return;
-    }
-
-    raf = requestAnimationFrame(tick);
+    if (tPhase > 2.1) document.getElementById("final").classList.add("on");
+    if (tPhase > 4.9) document.getElementById("fade").classList.add("on");
+    if (tPhase > CONFIG.BURST){ location.href = CONFIG.home; }
   }
 
+  function loop(ms){
+    var now = ms / 1000;
+    var dt = lastMs ? Math.min(0.05, now - lastMs) : 0.016;
+    lastMs = now;
+    tPhase += dt;
+    render(dt, now);
+    requestAnimationFrame(loop);
+  }
+
+  /* ---------- 启动 ---------- */
   function startShow(){
-    if (phase !== "gate") return;
-    phase = "warp";
-    T0 = performance.now();
+    if (phase !== "gate" && phase !== "init") return;
+    phase = "warp"; tPhase = 0;
     buildWarp();
-    document.getElementById("gate").classList.add("gone");
-    setTimeout(function(){ document.getElementById("gate").style.display = "none"; }, 800);
-    var sk = document.getElementById("skip");
-    sk.style.display = "block";
-    sk.addEventListener("click", function(){ location.href = CONFIG.home; });
+    var gd = document.getElementById("gate");
+    gd.classList.add("gone");
+    setTimeout(function(){ gd.style.display = "none"; }, 900);
+    document.getElementById("skip").style.display = "block";
   }
+
+  document.getElementById("skip").addEventListener("click", function(){
+    location.href = CONFIG.home;
+  });
+
+  document.getElementById("next").addEventListener("click", function(){
+    if (phase !== "card") return;
+    document.getElementById("card").classList.remove("on");
+    setTimeout(function(){
+      document.getElementById("card").style.display = "none";
+      beginBurst();
+    }, 1000);
+  });
 
   var inp = document.getElementById("dob");
   var err = document.getElementById("err");
-  var go = document.getElementById("go");
 
   inp.addEventListener("input", function(){
     var v = inp.value.replace(/\D/g, "").slice(0, 8);
@@ -450,29 +582,28 @@ var CONFIG = {
     }
   }
 
-  go.addEventListener("click", submit);
-  inp.addEventListener("keydown", function(e){
-    if (e.key === "Enter") submit();
-  });
+  document.getElementById("go").addEventListener("click", submit);
+  inp.addEventListener("keydown", function(e){ if (e.key === "Enter") submit(); });
   document.getElementById("tip").addEventListener("click", function(){
     document.getElementById("tip").textContent = "2007 年的那个冬天";
-  });
-
-  document.getElementById("next").addEventListener("click", function(){
-    if (phase !== "card") return;
-    document.getElementById("card").classList.remove("on");
-    setTimeout(function(){
-      document.getElementById("card").style.display = "none";
-      beginBurst();
-    }, 900);
   });
 
   document.getElementById("sub1").textContent = CONFIG.sub1;
   document.getElementById("sub2").textContent = CONFIG.sub2;
 
-  addEventListener("resize", resize);
+  window.addEventListener("resize", resize);
   resize();
-  raf = requestAnimationFrame(tick);
+
+  if (CONFIG.needCode){
+    phase = "gate";
+    document.getElementById("skip").style.display = "none";
+  } else {
+    document.getElementById("gate").style.display = "none";
+    phase = "init";
+    setTimeout(startShow, 320);
+  }
+
+  requestAnimationFrame(loop);
 })();
 </script>
 </body>
