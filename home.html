@@ -99,6 +99,18 @@
   body{animation:pageIn .9s ease both}
   @keyframes pageIn{from{opacity:0}to{opacity:1}}
 
+  #bgpic{position:fixed;inset:0;z-index:0;background-position:center;background-size:cover;
+    background-repeat:no-repeat;opacity:0;transition:opacity .9s ease}
+  body.has-bg #bgpic{opacity:1}
+  body.has-bg #sky{opacity:0;transition:opacity .9s ease}
+  #cakepic{display:none;width:100%;height:auto;object-fit:contain;
+    filter:drop-shadow(0 10px 26px rgba(0,0,0,.55))}
+  body.has-cake #cakepic{display:block}
+  body.has-cake .cake svg{display:none}
+  body.has-bg .floor{background:radial-gradient(circle at 50% 46%,rgba(4,6,12,.30) 0%,rgba(4,6,12,.62) 62%,rgba(4,6,12,.18) 100%);
+    box-shadow:none}
+  body.has-bg .floor::before{display:none}
+  body.has-bg .rim,body.has-bg .rim2{opacity:.25}
   #strings{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden}
   #wire{position:absolute;inset:0;width:100%;height:100%}
   .bulb{position:absolute;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;border-radius:50%;
@@ -114,6 +126,7 @@
 </style>
 </head>
 <body>
+<div id="bgpic"></div>
 <canvas id="sky"></canvas>
 
 <div id="stage">
@@ -129,6 +142,7 @@
     <div class="rim2"></div>
 
     <div class="cake">
+      <img id="cakepic" alt="">
       <svg viewBox="0 0 120 140" aria-hidden="true">
         <defs>
           <linearGradient id="cs" x1="0" y1="0" x2="0" y2="1">
@@ -215,6 +229,22 @@
 
 <script>
 (function(){
+  /* 可换素材：往 img/ 里放 bg.jpg / cake.png 就会自动换成你的图，没有就用下面画的 */
+  (function(){
+    var bg = new Image();
+    bg.onload = function(){
+      document.getElementById("bgpic").style.backgroundImage = "url(img/bg.jpg)";
+      document.body.classList.add("has-bg");
+    };
+    bg.src = "img/bg.jpg";
+    var ck = new Image();
+    ck.onload = function(){
+      document.getElementById("cakepic").src = "img/cake.png";
+      document.body.classList.add("has-cake");
+    };
+    ck.src = "img/cake.png";
+  })();
+
   /* 夜市灯串 */
   (function(){
     var wrap = document.getElementById("strings"), svg = document.getElementById("wire");
