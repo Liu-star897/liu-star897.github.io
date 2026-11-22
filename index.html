@@ -125,7 +125,7 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:
 /* ---------- 可点的星 ---------- */
 #stars{position:fixed;inset:0;z-index:3;pointer-events:none}
 .wstar{
-  position:absolute;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;
+  position:absolute;width:72px;height:72px;margin:-36px 0 0 -36px;border-radius:50%;
   pointer-events:auto;cursor:pointer;
   opacity:0;transform:scale(.6);
   transition:opacity 1.6s ease, transform .9s cubic-bezier(.22,.61,.36,1);
@@ -138,11 +138,21 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:
   animation:tw 3.8s ease-in-out infinite;
 }
 .wstar::after{
-  content:"";position:absolute;left:50%;top:50%;width:2.5px;height:2.5px;margin:-1.25px 0 0 -1.25px;
+  content:"";position:absolute;left:50%;top:50%;width:3.6px;height:3.6px;margin:-1.8px 0 0 -1.8px;
   border-radius:50%;background:#fff;
-  box-shadow:0 0 12px 3px rgba(208,230,255,.6);
+  box-shadow:0 0 14px 4px rgba(208,230,255,.62);
 }
 @keyframes tw{0%,100%{opacity:.5}50%{opacity:1}}
+
+/* 一直没被点开，就慢慢转暖黄，等人来碰 */
+.wstar.warm::before{
+  background:radial-gradient(circle,rgba(255,246,214,.92) 0%,rgba(255,216,146,.46) 18%,rgba(255,196,112,.11) 42%,rgba(255,186,96,0) 70%) !important;
+  animation:tw 2.4s ease-in-out infinite;
+}
+.wstar.warm::after{
+  background:#fff6dc;
+  box-shadow:0 0 18px 6px rgba(255,206,132,.8);
+}
 
 /* ---------- 祝福卡 ---------- */
 #wish{
@@ -663,6 +673,7 @@ var CONFIG = {
     el.addEventListener("click", function(ev){
       ev.stopPropagation();
       var i = parseInt(el.getAttribute("data-i"), 10) || 0;
+      el.classList.remove("warm");
       wishTextEl.textContent = CONFIG.wishes[i % CONFIG.wishes.length];
       wishEl.classList.add("on");
       if (bgmEl && bgmEl.paused) playBgm();
@@ -711,19 +722,17 @@ var CONFIG = {
     document.addEventListener("keydown", kick);
   }
 
-  /* delayMs：先静音播放，过这么久再淡入（开场等穿越过去再起音乐） */
-  function playBgm(delayMs){
+  /* 直接从音乐第 3 秒开始放（前面那段不要） */
+  var BGM_START = 3;
+  function playBgm(){
     if (!bgmEl) return;
-    try { bgmEl.volume = 0; } catch (e) {}
-    var start = function(){
-      setBgmBtn(true);
-      var d = delayMs || 0;
-      if (d > 0){
-        setTimeout(function(){ fadeBgmTo(0.5, 3600); }, d);
-      } else {
-        fadeBgmTo(0.5, 3600);
-      }
+    var seek = function(){
+      try { if (bgmEl.currentTime < BGM_START - 0.1) bgmEl.currentTime = BGM_START; } catch (e) {}
     };
+    if (bgmEl.readyState >= 1) seek();
+    else bgmEl.addEventListener("loadedmetadata", seek, { once: true });
+    try { bgmEl.volume = 0; } catch (e) {}
+    var start = function(){ setBgmBtn(true); fadeBgmTo(0.5, 2000); };
     var pr = null;
     try { pr = bgmEl.play(); } catch (e) {}
     if (pr && pr.then){
@@ -748,8 +757,18 @@ var CONFIG = {
   function showCard(){
     cardEl.classList.add("on");
     setTimeout(function(){ cardEl.classList.add("st1"); }, 300);
-    setTimeout(function(){ cardEl.classList.add("st2"); }, 2900);
-    setTimeout(function(){ cardEl.classList.add("st3"); }, 5500);
+    setTimeout(function(){ cardEl.classList.add("st2"); }, 3300);
+    setTimeout(function(){ cardEl.classList.add("st3"); }, 6300);
+    /* 停一会儿如果一颗都没点，慢慢转暖提醒 */
+    setTimeout(warmStars, 12000);
+  }
+
+  function warmStars(){
+    wstarEls.forEach(function(el, i){
+      setTimeout(function(){
+        if (!el.classList.contains("warm")) el.classList.add("warm");
+      }, i * 700);
+    });
   }
 
   /* ---------- 启动 ---------- */
@@ -825,7 +844,7 @@ var CONFIG = {
       if (tapEl.classList.contains("gone")) return;
       tapEl.classList.add("gone");
       setTimeout(function(){ tapEl.style.display = "none"; }, 950);
-      playBgm(3000);
+      playBgm();
       startShow();
     });
   }
