@@ -257,7 +257,7 @@ var CONFIG = {
   ],
   WARP: 1.6,
   RAIN: 5.8,
-  BURST: 6.6
+  BURST: 11.6
 };
 
 (function(){
@@ -648,7 +648,7 @@ var CONFIG = {
     ctx.restore();
 
     if (tPhase > 2.1) document.getElementById("final").classList.add("on");
-    if (tPhase > 4.9){
+    if (tPhase > 9.9){
       document.getElementById("fade").classList.add("on");
       stopBgm();
     }
