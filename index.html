@@ -298,7 +298,7 @@ var CONFIG = {
   ],
   WARP: 1.6,
   RAIN: 5.8,
-  BURST: 11.6
+  BURST: 18
 };
 
 (function(){
@@ -602,8 +602,9 @@ var CONFIG = {
   }
 
   /* ---------- 点阵汇聚 ---------- */
+  var burstLeaving = false;
   function beginBurst(){
-    phase = "burst"; tPhase = 0;
+    phase = "burst"; tPhase = 0; burstLeaving = false;
     var w1 = Math.min(W * 0.105, H * 0.135, 112);
     var w2 = Math.min(W * 0.205, H * 0.26, 200);
     var lines = [
@@ -720,11 +721,15 @@ var CONFIG = {
     ctx.restore();
 
     if (tPhase > 2.1) document.getElementById("final").classList.add("on");
-    if (tPhase > 9.9 && !hold){
-      document.getElementById("fade").classList.add("on");
+    /* 跳主会场前 2 秒开始把音乐淡掉（只触发一次，否则每帧重置就永远淡不完） */
+    if (!hold && !burstLeaving && tPhase > CONFIG.BURST - 2){
+      burstLeaving = true;
       stopBgm();
     }
-    if (tPhase > CONFIG.BURST && !hold){ location.href = CONFIG.home; }
+    if (!hold && tPhase > CONFIG.BURST - 1.7){
+      document.getElementById("fade").classList.add("on");
+    }
+    if (!hold && tPhase > CONFIG.BURST){ location.href = CONFIG.home; }
   }
 
   function loop(ms){
