@@ -279,7 +279,7 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:
 <div id="fade"></div>
 <div id="skip">跳 过 →</div>
 <div id="music">♪</div>
-<audio id="bgm" src="bgm/9-teen.mp3" preload="auto" loop playsinline></audio>
+<audio id="bgm" src="bgm/9-teen.mp3" preload="none" loop playsinline></audio>
 
 <script>
 var CONFIG = {
@@ -846,6 +846,7 @@ var CONFIG = {
         bgmFetching = false;
         bgmBlobUrl = URL.createObjectURL(b);
         bgmUsingBlob = true;
+        console.log("BGM_BLOB_READY size=" + b.size);
         if (bgmEl.paused){
           bgmEl.src = bgmBlobUrl;
           bgmEl.load();
