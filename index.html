@@ -821,7 +821,6 @@ var CONFIG = {
   /* 只要往后够听十几秒就出声，最多等 3 秒；不追求整首缓冲完（浏览器本来就不会整首拉） */
   function waitBuffered(){
     var done = false, iv = 0;
-    console.log("[bgm] tap", Math.round(performance.now()));
     var reveal = function(){
       if (done) return;
       done = true;
@@ -829,7 +828,6 @@ var CONFIG = {
       if (bgmEl.paused) return;
       try { bgmEl.currentTime = BGM_START; } catch (e) {}
       fadeBgmTo(0.5, 1200);
-      console.log("[bgm] reveal", Math.round(performance.now()));
     };
     iv = setInterval(function(){
       if (bgmEl.paused){ done = true; clearInterval(iv); return; }
