@@ -279,7 +279,7 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:
 <div id="fade"></div>
 <div id="skip">跳 过 →</div>
 <div id="music">♪</div>
-<audio id="bgm" src="bgm/9-teen.mp3" preload="none" loop playsinline></audio>
+<audio id="bgm" src="bgm/9-teen.mp3?v=2" preload="none" loop playsinline></audio>
 
 <script>
 var CONFIG = {
@@ -798,6 +798,7 @@ var CONFIG = {
   var BGM_START = 3;
   function playBgm(){
     if (!bgmEl) return;
+    bgmStarted = true;
     var seek = function(){
       try { if (bgmEl.currentTime < BGM_START - 0.1) bgmEl.currentTime = BGM_START; } catch (e) {}
     };
@@ -829,7 +830,7 @@ var CONFIG = {
   }
 
   /* 整首歌一次性拉进内存，之后播放完全不碰网络——流式播放会因分片请求时快时慢而断断续续 */
-  var BGM_SRC = "bgm/9-teen.mp3";
+  var BGM_SRC = "bgm/9-teen.mp3?v=2";
   var bgmBlobUrl = null, bgmFetching = false, bgmStarted = false, bgmUsingBlob = false;
   function startBgmOnce(){
     if (bgmStarted) return;
@@ -849,6 +850,7 @@ var CONFIG = {
         if (bgmEl.paused){
           bgmEl.src = bgmBlobUrl;
           bgmEl.load();
+          if (bgmStarted) return; /* 她自己按过暂停，就别替她放 */
           startBgmOnce();
           return;
         }
@@ -1016,8 +1018,8 @@ var CONFIG = {
       tapEl.classList.add("gone");
       setTimeout(function(){ tapEl.style.display = "none"; }, 950);
       prefetchBgm();
-      /* 先在内存里把歌备好；两秒半还没下完就先流播，别让人干等 */
-      setTimeout(startBgmOnce, 6000);
+      /* 必须在这个点击里立刻起播：晚几秒再播放，浏览器会当成自动播放给拦掉 */
+      playBgm();
       startShow();
     });
   }
