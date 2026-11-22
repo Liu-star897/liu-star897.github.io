@@ -820,7 +820,13 @@ var CONFIG = {
   }
 
   /* 整首歌一次性拉进内存，之后播放完全不碰网络——流式播放会因分片请求时快时慢而断断续续 */
-  var bgmBlobUrl = null, bgmFetching = false;
+  var bgmBlobUrl = null, bgmFetching = false, bgmStarted = false;
+  function startBgmOnce(){
+    if (bgmStarted) return;
+    bgmStarted = true;
+    if (bgmEl && !bgmEl.paused) return;
+    playBgm();
+  }
   function prefetchBgm(){
     if (bgmBlobUrl || bgmFetching || !bgmEl || typeof fetch !== "function") return;
     bgmFetching = true;
@@ -832,6 +838,7 @@ var CONFIG = {
         if (bgmEl.paused){
           bgmEl.src = bgmBlobUrl;
           bgmEl.load();
+          startBgmOnce();
           return;
         }
         /* 正在播流式版本：换成本地副本，接在同一个位置上 */
@@ -998,7 +1005,8 @@ var CONFIG = {
       tapEl.classList.add("gone");
       setTimeout(function(){ tapEl.style.display = "none"; }, 950);
       prefetchBgm();
-      playBgm();
+      /* 先在内存里把歌备好；两秒半还没下完就先流播，别让人干等 */
+      setTimeout(startBgmOnce, 2500);
       startShow();
     });
   }
