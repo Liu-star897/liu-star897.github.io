@@ -846,7 +846,6 @@ var CONFIG = {
         bgmFetching = false;
         bgmBlobUrl = URL.createObjectURL(b);
         bgmUsingBlob = true;
-        console.log("BGM_BLOB_READY size=" + b.size);
         if (bgmEl.paused){
           bgmEl.src = bgmBlobUrl;
           bgmEl.load();
