@@ -279,7 +279,7 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:
 <div id="fade"></div>
 <div id="skip">跳 过 →</div>
 <div id="music">♪</div>
-<audio id="bgm" src="bgm/9-teen.mp3?v=2" preload="none" loop playsinline></audio>
+<audio id="bgm" src="bgm/9-teen.mp3?v=2" preload="auto" loop playsinline></audio>
 
 <script>
 var CONFIG = {
@@ -755,7 +755,7 @@ var CONFIG = {
 
   /* ---------- 背景音乐（本地 mp3） ---------- */
   var bgmEl = document.getElementById("bgm");
-  var bgmTimer = null, bgmArmed = false;
+  var bgmTimer = null, bgmArmed = false, bgmStarted = false;
 
   function setBgmBtn(on){
     var btn = document.getElementById("music");
@@ -794,7 +794,7 @@ var CONFIG = {
     document.addEventListener("keydown", kick);
   }
 
-  /* 直接从音乐第 3 秒开始放（前面那段不要） */
+  /* 直接从音乐第 3 秒开始放（前面那段不要）；先在静音状态下把它缓冲完，再出声 */
   var BGM_START = 3;
   function playBgm(){
     if (!bgmEl) return;
@@ -805,67 +805,45 @@ var CONFIG = {
     if (bgmEl.readyState >= 1) seek();
     else bgmEl.addEventListener("loadedmetadata", seek, { once: true });
     try { bgmEl.volume = 0; } catch (e) {}
-    var start = function(){ setBgmBtn(true); fadeBgmTo(0.5, 2000); };
+    var started = false;
+    var begin = function(){
+      if (started) return;
+      started = true;
+      setBgmBtn(true);
+      waitBuffered();
+    };
     var pr = null;
     try { pr = bgmEl.play(); } catch (e) {}
-    if (pr && pr.then){
-      pr.then(start).catch(function(){
-        /* 个别内置浏览器不认 blob 音频，退回流式 */
-        if (bgmUsingBlob){
-          bgmUsingBlob = false;
-          try { bgmEl.src = BGM_SRC; bgmEl.load(); } catch (e) {}
-          setTimeout(function(){ playBgm(); }, 150);
-          return;
-        }
-        setBgmBtn(false); armBgm();
-      });
-    } else {
-      start();
-    }
+    if (pr && pr.then) pr.then(begin).catch(function(){ setBgmBtn(false); armBgm(); });
+    else begin();
+  }
+
+  /* 等整首歌落进缓冲再淡入：开头就算卡顿，也听不见 */
+  function waitBuffered(){
+    var done = false, iv = 0;
+    var reveal = function(){
+      if (done) return;
+      done = true;
+      if (iv) clearInterval(iv);
+      if (bgmEl.paused) return;
+      try { bgmEl.currentTime = BGM_START; } catch (e) {}
+      fadeBgmTo(0.5, 1600);
+    };
+    iv = setInterval(function(){
+      if (bgmEl.paused){ done = true; clearInterval(iv); return; }
+      var d = 0, bf = 0;
+      try {
+        d = bgmEl.duration || 0;
+        if (bgmEl.buffered.length) bf = bgmEl.buffered.end(bgmEl.buffered.length - 1);
+      } catch (e) {}
+      if (d > 0 && bf >= d * 0.9) reveal();
+    }, 250);
+    setTimeout(reveal, 9000);
   }
 
   function stopBgm(){
     setBgmBtn(false);
     fadeBgmTo(0, 1500);
-  }
-
-  /* 整首歌一次性拉进内存，之后播放完全不碰网络——流式播放会因分片请求时快时慢而断断续续 */
-  var BGM_SRC = "bgm/9-teen.mp3?v=2";
-  var bgmBlobUrl = null, bgmFetching = false, bgmStarted = false, bgmUsingBlob = false;
-  function startBgmOnce(){
-    if (bgmStarted) return;
-    bgmStarted = true;
-    if (bgmEl && !bgmEl.paused) return;
-    playBgm();
-  }
-  function prefetchBgm(){
-    if (bgmBlobUrl || bgmFetching || !bgmEl || typeof fetch !== "function") return;
-    bgmFetching = true;
-    fetch(bgmEl.getAttribute("src"), { cache: "force-cache" })
-      .then(function(r){ if (!r.ok) throw new Error("http " + r.status); return r.blob(); })
-      .then(function(b){
-        bgmFetching = false;
-        bgmBlobUrl = URL.createObjectURL(b);
-        bgmUsingBlob = true;
-        if (bgmEl.paused){
-          bgmEl.src = bgmBlobUrl;
-          bgmEl.load();
-          if (bgmStarted) return; /* 她自己按过暂停，就别替她放 */
-          startBgmOnce();
-          return;
-        }
-        /* 正在播流式版本：换成本地副本，接在同一个位置上 */
-        var t = bgmEl.currentTime, v = bgmEl.volume;
-        bgmEl.src = bgmBlobUrl;
-        bgmEl.load();
-        bgmEl.addEventListener("loadedmetadata", function(){
-          try { bgmEl.currentTime = t; } catch (e) {}
-          try { bgmEl.volume = v; } catch (e) {}
-          var pr = bgmEl.play();
-          if (pr && pr.catch) pr.catch(function(){});
-        }, { once: true });
-      })
-      .catch(function(){ bgmFetching = false; });
   }
 
   document.getElementById("music").addEventListener("click", function(){
@@ -1017,7 +995,6 @@ var CONFIG = {
       if (tapEl.classList.contains("gone")) return;
       tapEl.classList.add("gone");
       setTimeout(function(){ tapEl.style.display = "none"; }, 950);
-      prefetchBgm();
       /* 必须在这个点击里立刻起播：晚几秒再播放，浏览器会当成自动播放给拦掉 */
       playBgm();
       startShow();
