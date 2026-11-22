@@ -4,6 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>给 小鹿 的流星雨</title>
+<meta property="og:type" content="website">
+<meta property="og:title" content="给小鹿的流星雨">
+<meta property="og:description" content="愿你的十九岁，像这一刻流星一样闪耀。">
+<meta property="og:image" content="https://liu-star897.github.io/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="https://liu-star897.github.io/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://liu-star897.github.io/og.png">
+<meta name="description" content="愿你的十九岁，像这一刻流星一样闪耀。">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='24' font-size='24'%3E%E2%9C%A8%3C/text%3E%3C/svg%3E">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -91,6 +101,30 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:
 #final.on{opacity:1}
 #final .sub{font-size:12px;letter-spacing:.42em;color:#8fa0c2;margin-bottom:12px}
 #final .sub2{font-size:10px;letter-spacing:.3em;color:#4d5776}
+#save{
+  margin-top:24px;padding:10px 26px;border-radius:999px;cursor:pointer;font-family:inherit;
+  background:transparent;border:1px solid rgba(214,228,255,.18);
+  color:#93a4c6;font-size:11px;letter-spacing:.26em;
+  opacity:0;pointer-events:none;
+  transition:opacity 1s ease .12s,border-color .4s,color .4s,background .4s;
+}
+#final.on #save{opacity:1;pointer-events:auto}
+#save:hover{border-color:rgba(214,228,255,.55);color:#dbe5f8;background:rgba(214,228,255,.05)}
+
+#shot{
+  position:fixed;inset:0;z-index:12;display:none;
+  flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  padding:20px;background:rgba(2,4,10,.94);
+}
+#shot.on{display:flex}
+#shot img{max-width:100%;max-height:74vh;border-radius:8px;box-shadow:0 26px 70px -24px #000;background:#000206}
+#shot .shot-tip{font-size:11px;letter-spacing:.2em;color:#6f7b9c;text-align:center;line-height:2}
+#shot .shot-go{
+  margin-top:2px;padding:9px 26px;border-radius:999px;cursor:pointer;font-family:inherit;
+  background:transparent;border:1px solid rgba(214,228,255,.24);color:#c9d5ee;
+  font-size:11px;letter-spacing:.24em;transition:.35s;
+}
+#shot .shot-go:hover{border-color:rgba(214,228,255,.6);background:rgba(214,228,255,.06)}
 
 #fade{position:fixed;inset:0;z-index:9;background:#000206;opacity:0;pointer-events:none;transition:opacity 1.9s ease}
 #fade.on{opacity:1}
@@ -217,6 +251,13 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:
 <div id="final">
   <p class="sub" id="sub1"></p>
   <p class="sub2" id="sub2"></p>
+  <button id="save">保 存 这 一 张</button>
+</div>
+
+<div id="shot">
+  <img alt="这一张">
+  <p class="shot-tip">长按图片可以保存到相册<br>电脑上就右键另存为</p>
+  <button class="shot-go" id="shot-go">去 下 一 页 →</button>
 </div>
 
 <div id="stars">
@@ -269,6 +310,7 @@ var CONFIG = {
   var twinkle = [], warp = [], meteors = [], parts = [], trails = [];
   var phase = "init", tPhase = 0, lastMs = 0;
   var spawnAcc = 0;
+  var hold = false;
 
   var RAD = Math.PI * 0.655;
 
@@ -315,14 +357,14 @@ var CONFIG = {
     var ax = W * 0.08, ay = -H * 0.08, bx = W * 1.02, by = H * 1.08;
     var ang = Math.atan2(by - ay, bx - ax);
     var px = Math.cos(ang + Math.PI / 2), py = Math.sin(ang + Math.PI / 2);
-    var n = Math.min(1500, Math.round(W * H / 900));
+    var n = Math.min(2600, Math.round(W * H / 560));
     for (var i = 0; i < n; i++){
       var t = Math.random();
       var ox = (Math.random() + Math.random() + Math.random() + Math.random() - 2);
       var spread = 42 + Math.random() * 136;
       var x = ax + (bx - ax) * t + px * ox * spread + (Math.random() - .5) * 26;
       var y = ay + (by - ay) * t + py * ox * spread + (Math.random() - .5) * 26;
-      var a = 0.014 + Math.random() * 0.07;
+      var a = 0.016 + Math.random() * 0.085;
       b.beginPath();
       b.arc(x, y, 0.25 + Math.random() * 0.85, 0, 6.2832);
       b.fillStyle = "rgba(176,202,255," + a.toFixed(4) + ")";
@@ -330,27 +372,56 @@ var CONFIG = {
     }
 
     /* 远景星 */
-    var ns = Math.min(420, Math.round(W * H / 3400));
+    var ns = Math.min(1100, Math.round(W * H / 1250));
     for (var j = 0; j < ns; j++){
       var sx = Math.random() * W, sy = Math.random() * H;
-      var sr = 0.25 + Math.random() * 0.85;
-      var sa = 0.05 + Math.random() * 0.3;
+      var sr = 0.3 + Math.pow(Math.random(), 3) * 1.5;
+      var sa = 0.07 + Math.random() * 0.44;
       b.beginPath();
       b.arc(sx, sy, sr, 0, 6.2832);
-      b.fillStyle = "rgba(206,222,255," + sa.toFixed(3) + ")";
+      b.fillStyle = "rgba(212,228,255," + sa.toFixed(3) + ")";
       b.fill();
+    }
+
+    /* 亮星：光晕 + 十字光芒 */
+    var nb = Math.round(Math.min(56, 22 + W * H / 30000));
+    for (var q = 0; q < nb; q++){
+      var qx = Math.random() * W, qy = Math.random() * H;
+      var qr = 0.75 + Math.random() * 0.85;
+      var qh = qr * (4.2 + Math.random() * 3.4);
+      var hg = b.createRadialGradient(qx, qy, 0, qx, qy, qh);
+      hg.addColorStop(0, "rgba(232,242,255,0.62)");
+      hg.addColorStop(0.28, "rgba(200,220,255,0.2)");
+      hg.addColorStop(1, "rgba(180,205,255,0)");
+      b.fillStyle = hg;
+      b.beginPath(); b.arc(qx, qy, qh, 0, 6.2832); b.fill();
+      b.fillStyle = "rgba(244,250,255,0.95)";
+      b.beginPath(); b.arc(qx, qy, qr, 0, 6.2832); b.fill();
+      var cl = qr * (5 + Math.random() * 4);
+      var cgx = b.createLinearGradient(qx - cl, qy, qx + cl, qy);
+      cgx.addColorStop(0, "rgba(198,220,255,0)");
+      cgx.addColorStop(0.5, "rgba(226,240,255,0.5)");
+      cgx.addColorStop(1, "rgba(198,220,255,0)");
+      b.fillStyle = cgx;
+      b.fillRect(qx - cl, qy - 0.4, cl * 2, 0.8);
+      var cgy = b.createLinearGradient(qx, qy - cl, qx, qy + cl);
+      cgy.addColorStop(0, "rgba(198,220,255,0)");
+      cgy.addColorStop(0.5, "rgba(226,240,255,0.5)");
+      cgy.addColorStop(1, "rgba(198,220,255,0)");
+      b.fillStyle = cgy;
+      b.fillRect(qx - 0.4, qy - cl, 0.8, cl * 2);
     }
     b.globalCompositeOperation = "source-over";
   }
 
   function buildTwinkle(){
     twinkle = [];
-    var n = Math.min(90, Math.round(W * H / 14000));
+    var n = Math.min(170, Math.round(W * H / 7500));
     for (var i = 0; i < n; i++){
       twinkle.push({
         x: Math.random() * W, y: Math.random() * H,
-        r: 0.5 + Math.random() * 1.15,
-        a: 0.2 + Math.random() * 0.5,
+        r: 0.55 + Math.random() * 1.3,
+        a: 0.26 + Math.random() * 0.6,
         s: 0.5 + Math.random() * 1.4,
         p: Math.random() * 6.2832
       });
@@ -518,15 +589,15 @@ var CONFIG = {
 
   function rainRate(p){
     var s = Math.sin(Math.PI * Math.pow(Math.min(1, p), 0.8));
-    return 4 + 44 * s;
+    return 6 + 68 * s;
   }
 
   function stepRain(dt, p){
     spawnAcc += rainRate(p) * dt;
     var guard = 0;
-    while (spawnAcc >= 1 && guard++ < 40){
+    while (spawnAcc >= 1 && guard++ < 70){
       spawnAcc -= 1;
-      if (meteors.length < 380) spawnMeteor();
+      if (meteors.length < 560) spawnMeteor();
     }
   }
 
@@ -568,6 +639,7 @@ var CONFIG = {
       });
     }
     if (navigator.vibrate) { try { navigator.vibrate(16); } catch (e) {} }
+
   }
 
   function easeOut(t){ return 1 - Math.pow(1 - t, 3); }
@@ -608,15 +680,15 @@ var CONFIG = {
     }
 
     if (phase === "card"){
-      spawnAcc += 2.6 * dt;
-      if (spawnAcc >= 1 && meteors.length < 110){ spawnAcc -= 1; spawnMeteor(); }
+      spawnAcc += 4.4 * dt;
+      if (spawnAcc >= 1 && meteors.length < 170){ spawnAcc -= 1; spawnMeteor(); }
       drawMeteors(dt);
       return;
     }
 
     /* burst */
-    spawnAcc += 1.4 * dt;
-    if (spawnAcc >= 1 && meteors.length < 70){ spawnAcc -= 1; spawnMeteor(); }
+    spawnAcc += 2.4 * dt;
+    if (spawnAcc >= 1 && meteors.length < 120){ spawnAcc -= 1; spawnMeteor(); }
     drawMeteors(dt);
 
     var bp = Math.min(1, tPhase / 2.0);
@@ -648,11 +720,11 @@ var CONFIG = {
     ctx.restore();
 
     if (tPhase > 2.1) document.getElementById("final").classList.add("on");
-    if (tPhase > 9.9){
+    if (tPhase > 9.9 && !hold){
       document.getElementById("fade").classList.add("on");
       stopBgm();
     }
-    if (tPhase > CONFIG.BURST){ location.href = CONFIG.home; }
+    if (tPhase > CONFIG.BURST && !hold){ location.href = CONFIG.home; }
   }
 
   function loop(ms){
@@ -790,6 +862,34 @@ var CONFIG = {
   document.getElementById("skip").addEventListener("click", function(){
     location.href = CONFIG.home;
   });
+
+  /* ---------- 把点阵这一张存下来 ---------- */
+  (function(){
+    var saveBtn = document.getElementById("save");
+    var shotEl = document.getElementById("shot");
+    var shotImg = shotEl.querySelector("img");
+    var shotGo = document.getElementById("shot-go");
+    if (!saveBtn || !shotEl || !shotImg) return;
+
+    saveBtn.addEventListener("click", function(ev){
+      ev.stopPropagation();
+      var url;
+      try { url = cv.toDataURL("image/png"); } catch (e) { return; }
+      shotImg.src = url;
+      hold = true;
+      document.getElementById("fade").classList.remove("on");
+      shotEl.classList.add("on");
+    });
+
+    shotEl.addEventListener("click", function(ev){
+      if (ev.target === shotEl) shotEl.classList.remove("on");
+    });
+
+    if (shotGo) shotGo.addEventListener("click", function(ev){
+      ev.stopPropagation();
+      location.href = CONFIG.home;
+    });
+  })();
 
   document.getElementById("next").addEventListener("click", function(){
     if (phase !== "card") return;
