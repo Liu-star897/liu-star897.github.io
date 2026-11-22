@@ -818,27 +818,31 @@ var CONFIG = {
     else begin();
   }
 
-  /* 等整首歌落进缓冲再淡入：开头就算卡顿，也听不见 */
+  /* 只要往后够听十几秒就出声，最多等 3 秒；不追求整首缓冲完（浏览器本来就不会整首拉） */
   function waitBuffered(){
     var done = false, iv = 0;
+    console.log("[bgm] tap", Math.round(performance.now()));
     var reveal = function(){
       if (done) return;
       done = true;
       if (iv) clearInterval(iv);
       if (bgmEl.paused) return;
       try { bgmEl.currentTime = BGM_START; } catch (e) {}
-      fadeBgmTo(0.5, 1600);
+      fadeBgmTo(0.5, 1200);
+      console.log("[bgm] reveal", Math.round(performance.now()));
     };
     iv = setInterval(function(){
       if (bgmEl.paused){ done = true; clearInterval(iv); return; }
-      var d = 0, bf = 0;
+      var d = 0, bf = 0, cur = 0;
       try {
         d = bgmEl.duration || 0;
+        cur = bgmEl.currentTime || 0;
         if (bgmEl.buffered.length) bf = bgmEl.buffered.end(bgmEl.buffered.length - 1);
       } catch (e) {}
-      if (d > 0 && bf >= d * 0.9) reveal();
-    }, 250);
-    setTimeout(reveal, 9000);
+      /* 当前播放位置往后还有 10 秒余量就够起头了 */
+      if (d > 0 && bf >= Math.min(d, cur + 10)) reveal();
+    }, 150);
+    setTimeout(reveal, 3000);
   }
 
   function stopBgm(){
