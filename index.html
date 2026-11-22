@@ -819,6 +819,35 @@ var CONFIG = {
     fadeBgmTo(0, 1500);
   }
 
+  /* 整首歌一次性拉进内存，之后播放完全不碰网络——流式播放会因分片请求时快时慢而断断续续 */
+  var bgmBlobUrl = null, bgmFetching = false;
+  function prefetchBgm(){
+    if (bgmBlobUrl || bgmFetching || !bgmEl || typeof fetch !== "function") return;
+    bgmFetching = true;
+    fetch(bgmEl.getAttribute("src"), { cache: "force-cache" })
+      .then(function(r){ if (!r.ok) throw new Error("http " + r.status); return r.blob(); })
+      .then(function(b){
+        bgmFetching = false;
+        bgmBlobUrl = URL.createObjectURL(b);
+        if (bgmEl.paused){
+          bgmEl.src = bgmBlobUrl;
+          bgmEl.load();
+          return;
+        }
+        /* 正在播流式版本：换成本地副本，接在同一个位置上 */
+        var t = bgmEl.currentTime, v = bgmEl.volume;
+        bgmEl.src = bgmBlobUrl;
+        bgmEl.load();
+        bgmEl.addEventListener("loadedmetadata", function(){
+          try { bgmEl.currentTime = t; } catch (e) {}
+          try { bgmEl.volume = v; } catch (e) {}
+          var pr = bgmEl.play();
+          if (pr && pr.catch) pr.catch(function(){});
+        }, { once: true });
+      })
+      .catch(function(){ bgmFetching = false; });
+  }
+
   document.getElementById("music").addEventListener("click", function(){
     if (!bgmEl) return;
     if (bgmEl.paused) playBgm(); else stopBgm();
@@ -968,6 +997,7 @@ var CONFIG = {
       if (tapEl.classList.contains("gone")) return;
       tapEl.classList.add("gone");
       setTimeout(function(){ tapEl.style.display = "none"; }, 950);
+      prefetchBgm();
       playBgm();
       startShow();
     });
