@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>许愿池</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;overflow:hidden;background:#05080f}
+  body{font-family:"Songti SC","STSong","Noto Serif SC",serif;color:#e8eefc}
+  #sky{position:fixed;inset:0;width:100%;height:100%}
+  .back{position:fixed;left:18px;top:16px;z-index:6;font-size:13px;letter-spacing:.12em;
+    color:#cbd6ee;text-decoration:none;padding:9px 16px;border:1px solid rgba(160,180,220,.22);
+    border-radius:999px;background:rgba(10,16,30,.55);backdrop-filter:blur(6px)}
+  .wrap{position:relative;height:100%;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:2.4vh;padding:0 6vw}
+  h1{font-size:clamp(26px,4vw,44px);font-weight:500;letter-spacing:.18em;
+     background:linear-gradient(180deg,#fff6e2,#f0cd92);-webkit-background-clip:text;
+     background-clip:text;color:transparent}
+  .tip{font-size:clamp(11px,1.2vw,14px);letter-spacing:.16em;color:#96a4c3;text-align:center}
+  #pond{position:relative;width:min(76vw,54vh);aspect-ratio:1/1;cursor:pointer}
+  #water{width:100%;height:100%;display:block}
+  #fade{position:fixed;inset:0;background:#05080f;opacity:0;pointer-events:none;
+        transition:opacity .4s;z-index:9}
+  #fade.on{opacity:1}
+  body{animation:in .8s ease both}
+  @keyframes in{from{opacity:0}to{opacity:1}}
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+<a class="back" href="home.html">← 回夜市</a>
+
+<div class="wrap">
+  <div style="text-align:center">
+    <h1>许 愿 池</h1>
+    <p class="tip" style="margin-top:1.4vh">往池子里扔一枚硬币，把想说的说给它听</p>
+  </div>
+  <div id="pond"><canvas id="water"></canvas></div>
+  <p class="tip" id="hint">点一下水面</p>
+</div>
+
+<div id="fade"></div>
+
+<script>
+(function(){
+  /* 夜空 */
+  var sky = document.getElementById("sky"), sctx = sky.getContext("2d");
+  function drawSky(){
+    var dpr = Math.min(2, devicePixelRatio || 1);
+    var W = innerWidth, H = innerHeight;
+    sky.width = W * dpr; sky.height = H * dpr;
+    sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var g = sctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, "#060b1a"); g.addColorStop(1, "#05080f");
+    sctx.fillStyle = g; sctx.fillRect(0, 0, W, H);
+    for (var i = 0; i < 260; i++){
+      var x = Math.random() * W, y = Math.random() * H * .8;
+      sctx.beginPath();
+      sctx.arc(x, y, .3 + Math.pow(Math.random(), 3) * 1.2, 0, 6.2832);
+      sctx.fillStyle = "rgba(226,238,255," + (0.14 + Math.random() * 0.45).toFixed(3) + ")";
+      sctx.fill();
+    }
+  }
+  drawSky();
+  addEventListener("resize", drawSky);
+
+  /* 池子 */
+  var pond = document.getElementById("pond");
+  var cv = document.getElementById("water");
+  var ctx = cv.getContext("2d");
+  var W = 0, H = 0, dpr = Math.min(2, devicePixelRatio || 1);
+  var ripples = [], coins = [], hearts = [];
+
+  function layout(){
+    W = pond.clientWidth; H = pond.clientHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  layout();
+  addEventListener("resize", function(){ layout(); });
+
+  function drawBase(){
+    ctx.clearRect(0, 0, W, H);
+    var cx = W / 2, cy = H * .56, rx = W * .44, ry = H * .30;
+
+    /* 池壁 */
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, 6.2832);
+    ctx.fillStyle = "rgba(14,22,38,.92)"; ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "rgba(150,170,210,.28)"; ctx.stroke();
+    ctx.restore();
+
+    /* 水面 */
+    var wg = ctx.createRadialGradient(cx, cy - ry * .3, 0, cx, cy, rx);
+    wg.addColorStop(0, "rgba(58,96,150,.55)");
+    wg.addColorStop(.6, "rgba(24,42,72,.85)");
+    wg.addColorStop(1, "rgba(10,18,32,.95)");
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(cx, cy, rx * .94, ry * .92, 0, 0, 6.2832);
+    ctx.fillStyle = wg; ctx.fill();
+    ctx.clip();
+    /* 水面上的星点 */
+    for (var i = 0; i < 26; i++){
+      var a = i * 2.399, r = Math.sqrt(i / 26) * rx * .8;
+      var px = cx + Math.cos(a) * r * .9, py = cy + Math.sin(a) * r * .34;
+      ctx.beginPath(); ctx.arc(px, py, .6 + (i % 3) * .5, 0, 6.2832);
+      ctx.fillStyle = "rgba(190,215,255," + (.12 + (i % 5) * .06).toFixed(2) + ")";
+      ctx.fill();
+    }
+    ctx.restore();
+
+    /* 池沿外一圈暖光 */
+    var og = ctx.createRadialGradient(cx, cy + ry * .5, rx * .2, cx, cy + ry * .5, rx * 1.35);
+    og.addColorStop(0, "rgba(255,186,110,.10)");
+    og.addColorStop(1, "rgba(255,186,110,0)");
+    ctx.fillStyle = og;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  var last = 0;
+  function frame(now){
+    var dt = last ? Math.min(.05, (now - last) / 1000) : .016;
+    last = now;
+    drawBase();
+
+    var cx = W / 2, cy = H * .56, rx = W * .44, ry = H * .30;
+
+    /* 涟漪 */
+    for (var i = ripples.length - 1; i >= 0; i--){
+      var r = ripples[i];
+      r.t += dt;
+      if (r.t > 2.4){ ripples.splice(i, 1); continue; }
+      var k = r.t / 2.4;
+      ctx.beginPath();
+      ctx.ellipse(r.x, r.y, r.r0 + k * rx * .55, (r.r0 + k * rx * .55) * .34, 0, 0, 6.2832);
+      ctx.strokeStyle = "rgba(200,225,255," + ((1 - k) * .42).toFixed(3) + ")";
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+    }
+
+    /* 硬币 */
+    for (var j = coins.length - 1; j >= 0; j--){
+      var c = coins[j];
+      c.t += dt;
+      var p = Math.min(1, c.t / .55);
+      if (p < 1){
+        var yy = c.y0 + (cy - c.y0) * (p * p);
+        ctx.beginPath();
+        ctx.ellipse(c.x, yy, 5, 5 * (1 - p * .7), 0, 0, 6.2832);
+        ctx.fillStyle = "#ffd98c"; ctx.fill();
+        ctx.strokeStyle = "rgba(255,240,200,.8)"; ctx.lineWidth = .8; ctx.stroke();
+      } else if (!c.splashed){
+        c.splashed = true;
+        ripples.push({ x: c.x, y: cy, r0: 4, t: 0 });
+        hearts.push({ x: c.x, y: cy, t: 0 });
+      } else if (c.t > 1.2){
+        coins.splice(j, 1);
+      }
+    }
+
+    /* 爱心 */
+    for (var h = hearts.length - 1; h >= 0; h--){
+      var it = hearts[h];
+      it.t += dt;
+      if (it.t > 3.2){ hearts.splice(h, 1); continue; }
+      var k = it.t / 3.2;
+      var y = it.y - k * ry * 2.2;
+      var a = Math.min(1, it.t / .4) * (1 - k);
+      var sc = .5 + k * 1.1;
+      ctx.save();
+      ctx.translate(it.x, y);
+      ctx.scale(sc, sc);
+      ctx.beginPath();
+      ctx.moveTo(0, 6);
+      ctx.bezierCurveTo(-9, -2, -6, -11, 0, -6.5);
+      ctx.bezierCurveTo(6, -11, 9, -2, 0, 6);
+      ctx.fillStyle = "rgba(255,150,175," + (a * .9).toFixed(3) + ")";
+      ctx.fill();
+      ctx.restore();
+    }
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  var hint = document.getElementById("hint");
+  pond.addEventListener("click", function(e){
+    var rect = pond.getBoundingClientRect();
+    var x = e.clientX - rect.left, y = e.clientY - rect.top;
+    var cx = W / 2, cy = H * .56, rx = W * .44, ry = H * .30;
+    var dx = (x - cx) / rx, dy = (y - cy) / ry;
+    if (dx * dx + dy * dy > 1.05) return;
+    coins.push({ x: x, y0: y - H * .22, t: 0, splashed: false });
+    hint.textContent = "许愿了 · 再扔一枚也可以";
+  });
+
+  document.querySelector(".back").addEventListener("click", function(e){
+    e.preventDefault();
+    document.getElementById("fade").classList.add("on");
+    setTimeout(function(){ location.href = "home.html"; }, 380);
+  });
+})();
+</script>
+</body>
+</html>
