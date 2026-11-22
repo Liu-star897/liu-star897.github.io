@@ -123,7 +123,7 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:
 #wish.on{opacity:1;pointer-events:auto}
 .wish-card{
   width:min(520px,82vw);padding:44px 40px;border-radius:20px;
-  background:rgba(8,14,30,.78);border:1px solid rgba(206,228,255,.18);
+  background:rgba(6,11,24,.93);border:1px solid rgba(206,228,255,.18);
   box-shadow:0 34px 96px -34px rgba(80,130,220,.55);text-align:center;
   transform:translateY(10px) scale(.98);
   transition:transform .65s cubic-bezier(.22,.61,.36,1);
@@ -141,6 +141,8 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:
   color:#8fa0c2;font-size:15px;line-height:1;font-family:inherit;
   backdrop-filter:blur(4px);transition:.45s;
 }
+#music:not(.on){animation:musicHint 3.4s ease-in-out infinite}
+@keyframes musicHint{0%,100%{opacity:.5}50%{opacity:1}}
 #music:hover{border-color:rgba(214,228,255,.5);color:#dbe5f8}
 #music.on{color:#ffe6c2;border-color:rgba(255,220,170,.45);box-shadow:0 0 26px -8px rgba(255,215,160,.6)}
 </style>
