@@ -766,10 +766,13 @@ var CONFIG = {
 
   /* 整首先抓成 blob 存在本地内存：之后播放不再边下边卡 */
   function prefetchBgm(){
+    console.log("[bgm] prefetch enter");
     if (bgmFetching || bgmBlobUrl) return;
-    if (!window.fetch || !window.URL || !URL.createObjectURL) return;
+    if (!window.fetch || !window.URL || !URL.createObjectURL){ console.log("[bgm] no api"); return; }
     bgmFetching = true;
+    console.log("[bgm] fetch start");
     fetch(BGM_BASE).then(function(r){
+      console.log("[bgm] fetch resp", r.status, r.ok, r.headers.get("content-length"));
       if (!r.ok) throw new Error("bgm " + r.status);
       return r.blob();
     }).then(function(b){
