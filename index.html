@@ -51,8 +51,8 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:
   position:fixed;inset:0;z-index:4;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:24px;text-align:center;
-  opacity:0;pointer-events:none;transform:translateY(12px);
-  transition:opacity 2.4s cubic-bezier(.22,.61,.36,1),transform 2.4s cubic-bezier(.22,.61,.36,1);
+  opacity:0;pointer-events:none;
+  transition:opacity 1.2s ease;
 }
 #card.on{opacity:1;pointer-events:none;transform:none}
 #card.on #next{pointer-events:auto}
@@ -71,6 +71,15 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:
 }
 #next:hover{border-color:rgba(214,228,255,.65);background:rgba(214,228,255,.06);box-shadow:0 0 40px -12px rgba(150,190,255,.5)}
 #card .tip{margin-top:18px;font-size:10px;letter-spacing:.24em;color:#3a4258}
+
+/* 标题卡三段递进 */
+#card .c1,#card .c2,#card .c3,#card .c4{
+  opacity:0;transform:translateY(14px);
+  transition:opacity 1.7s cubic-bezier(.22,.61,.36,1),transform 1.7s cubic-bezier(.22,.61,.36,1);
+}
+#card.st1 .c1{opacity:1;transform:none}
+#card.st2 .c2{opacity:1;transform:none}
+#card.st3 .c3,#card.st3 .c4{opacity:1;transform:none}
 
 /* ---------- 结尾 ---------- */
 #final{
@@ -91,6 +100,27 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:
   transition:color .3s;
 }
 #skip:hover{color:#7d88a8}
+
+/* ---------- 点击开始 ---------- */
+#tap{
+  position:fixed;inset:0;z-index:7;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;text-align:center;cursor:pointer;
+  background:radial-gradient(circle at 50% 42%,#0a1530 0%,#040b1c 46%,#000206 100%);
+  transition:opacity .9s ease;
+}
+#tap.gone{opacity:0;pointer-events:none}
+.tap-t{
+  font-family:"Songti SC","Noto Serif SC","STSong",Georgia,serif;
+  font-weight:400;font-size:clamp(19px,4.4vw,34px);letter-spacing:.2em;
+  color:#e8f0ff;margin-bottom:42px;text-shadow:0 0 50px rgba(130,175,255,.3);
+}
+.tap-b{
+  padding:12px 44px;border-radius:999px;border:1px solid rgba(214,228,255,.3);
+  color:#dbe5f8;font-size:12px;letter-spacing:.34em;transition:.4s;
+}
+#tap:hover .tap-b{border-color:rgba(214,228,255,.7);background:rgba(214,228,255,.07)}
+.tap-s{margin-top:26px;font-size:10px;letter-spacing:.26em;color:#3f475e}
 
 /* ---------- 可点的星 ---------- */
 #stars{position:fixed;inset:0;z-index:3;pointer-events:none}
@@ -136,7 +166,7 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:
 /* ---------- 音乐 ---------- */
 #music{
   position:fixed;right:22px;top:20px;z-index:8;width:42px;height:42px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  display:none;align-items:center;justify-content:center;cursor:pointer;
   border:1px solid rgba(214,228,255,.18);background:rgba(10,18,36,.35);
   color:#8fa0c2;font-size:15px;line-height:1;font-family:inherit;
   backdrop-filter:blur(4px);transition:.45s;
@@ -150,6 +180,12 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:
 <body>
 <canvas id="cv"></canvas>
 
+<div id="tap">
+  <p class="tap-t">给 小 鹿 的 流 星 雨</p>
+  <div class="tap-b">点 击 开 始</div>
+  <p class="tap-s">建 议 戴 上 耳 机</p>
+</div>
+
 <div id="gate">
   <p class="hint">请 输 入 一 个 日 期</p>
   <div class="field">
@@ -161,11 +197,11 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:
 </div>
 
 <div id="card">
-  <h1>给 小 鹿 的 流 星 雨</h1>
-  <p class="t1">愿你的十九岁，像这一刻流星一样闪耀。</p>
-  <p class="t2">好事追着你，幸运围着你。</p>
-  <button id="next">继 续</button>
-  <p class="tip">点 击 看 下 一 页</p>
+  <h1 class="c1">给 小 鹿 的 流 星 雨</h1>
+  <p class="t1 c2">愿你的十九岁，像这一刻流星一样闪耀。</p>
+  <p class="t2 c3">好事追着你，幸运围着你。</p>
+  <button id="next" class="c4">继 续</button>
+  <p class="tip c4">点 击 看 下 一 页</p>
 </div>
 
 <div id="final">
@@ -192,6 +228,7 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:
 <div id="fade"></div>
 <div id="skip">跳 过 →</div>
 <div id="music">♪</div>
+<audio id="bgm" src="bgm/9-teen.mp3" preload="auto" loop playsinline></audio>
 
 <script>
 var CONFIG = {
@@ -554,7 +591,7 @@ var CONFIG = {
       drawMeteors(dt);
       if (p2 >= 1){
         phase = "card"; tPhase = 0;
-        document.getElementById("card").classList.add("on");
+        showCard();
         document.getElementById("skip").style.display = "block";
       }
       return;
@@ -603,7 +640,7 @@ var CONFIG = {
     if (tPhase > 2.1) document.getElementById("final").classList.add("on");
     if (tPhase > 4.9){
       document.getElementById("fade").classList.add("on");
-      stopMusic();
+      stopBgm();
     }
     if (tPhase > CONFIG.BURST){ location.href = CONFIG.home; }
   }
@@ -628,109 +665,84 @@ var CONFIG = {
       var i = parseInt(el.getAttribute("data-i"), 10) || 0;
       wishTextEl.textContent = CONFIG.wishes[i % CONFIG.wishes.length];
       wishEl.classList.add("on");
-      startMusic();
+      if (bgmEl && bgmEl.paused) playBgm();
     });
   });
   wishEl.addEventListener("click", function(){ wishEl.classList.remove("on"); });
 
-  /* ---------- 音乐：Web Audio 现场合成 ---------- */
-  var AC = null, master = null, noteBus = null, musicOn = false, noteTimer = 0;
-  var SCALE = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00];
+  /* ---------- 背景音乐（本地 mp3） ---------- */
+  var bgmEl = document.getElementById("bgm");
+  var bgmTimer = null, bgmArmed = false;
 
-  function initMusic(){
-    if (master) return true;
-    var Ctor = window.AudioContext || window.webkitAudioContext;
-    if (!Ctor) return false;
-    AC = new Ctor();
-
-    master = AC.createGain();
-    master.gain.value = 0;
-    master.connect(AC.destination);
-
-    noteBus = AC.createGain();
-    noteBus.gain.value = 0.55;
-    noteBus.connect(master);
-
-    var dl = AC.createDelay(1.5);
-    dl.delayTime.value = 0.44;
-    var fb = AC.createGain(); fb.gain.value = 0.34;
-    var wet = AC.createGain(); wet.gain.value = 0.42;
-    var lp = AC.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 2200;
-    noteBus.connect(dl);
-    dl.connect(lp);
-    lp.connect(wet);
-    wet.connect(master);
-    lp.connect(fb);
-    fb.connect(dl);
-
-    var p1 = AC.createOscillator(); p1.type = "sine"; p1.frequency.value = 65.41;
-    var p2 = AC.createOscillator(); p2.type = "sine"; p2.frequency.value = 98.00;
-    var pg = AC.createGain(); pg.gain.value = 0.028;
-    p1.connect(pg); p2.connect(pg); pg.connect(master);
-    p1.start(); p2.start();
-    return true;
+  function setBgmBtn(on){
+    var btn = document.getElementById("music");
+    if (!btn) return;
+    if (on){ btn.classList.add("on"); btn.style.display = "flex"; }
+    else { btn.classList.remove("on"); }
   }
 
-  function playNote(){
-    if (!musicOn || !AC) return;
-    var t = AC.currentTime + 0.03;
-    var f = SCALE[Math.floor(Math.random() * SCALE.length)];
-    var dur = 2.8 + Math.random() * 2.6;
-    var vol = 0.055 + Math.random() * 0.055;
-
-    var o1 = AC.createOscillator(); o1.type = "sine"; o1.frequency.value = f;
-    var o2 = AC.createOscillator(); o2.type = "triangle"; o2.frequency.value = f * 2.004;
-    var g1 = AC.createGain(); g1.gain.value = 0.0001;
-    var g2 = AC.createGain(); g2.gain.value = 0.0001;
-    g1.gain.exponentialRampToValueAtTime(vol, t + 0.035);
-    g1.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    g2.gain.exponentialRampToValueAtTime(vol * 0.13, t + 0.025);
-    g2.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.5);
-    o1.connect(g1); o2.connect(g2);
-    g1.connect(noteBus); g2.connect(noteBus);
-    o1.start(t); o1.stop(t + dur + 0.15);
-    o2.start(t); o2.stop(t + dur + 0.15);
+  function fadeBgmTo(v, ms, pauseEnd){
+    if (!bgmEl) return;
+    if (bgmTimer) { clearInterval(bgmTimer); bgmTimer = null; }
+    var from = bgmEl.volume, t0 = Date.now();
+    bgmTimer = setInterval(function(){
+      var k = Math.min(1, (Date.now() - t0) / ms);
+      try { bgmEl.volume = Math.max(0, Math.min(1, from + (v - from) * k)); } catch (e) {}
+      if (k >= 1){
+        clearInterval(bgmTimer); bgmTimer = null;
+        if (v <= 0.001 && pauseEnd !== false){ try { bgmEl.pause(); } catch (e) {} }
+      }
+    }, 50);
   }
 
-  function loopNotes(){
-    if (!musicOn) return;
-    playNote();
-    if (Math.random() < 0.4){
-      setTimeout(function(){ if (musicOn) playNote(); }, 200 + Math.random() * 300);
+  /* 浏览器会拦截无交互的自动播放：失败就等第一次点击/按键 */
+  function armBgm(){
+    if (bgmArmed) return;
+    bgmArmed = true;
+    var kick = function(){
+      document.removeEventListener("pointerdown", kick);
+      document.removeEventListener("touchstart", kick);
+      document.removeEventListener("keydown", kick);
+      bgmArmed = false;
+      if (bgmEl && bgmEl.paused) playBgm();
+    };
+    document.addEventListener("pointerdown", kick);
+    document.addEventListener("touchstart", kick);
+    document.addEventListener("keydown", kick);
+  }
+
+  function playBgm(){
+    if (!bgmEl) return;
+    try { bgmEl.volume = 0; } catch (e) {}
+    var pr = null;
+    try { pr = bgmEl.play(); } catch (e) {}
+    if (pr && pr.then){
+      pr.then(function(){ setBgmBtn(true); fadeBgmTo(0.5, 3200); })
+        .catch(function(){ setBgmBtn(false); armBgm(); });
+    } else {
+      setBgmBtn(true);
+      fadeBgmTo(0.5, 3200);
     }
-    noteTimer = setTimeout(loopNotes, 1200 + Math.random() * 2200);
   }
 
-  function startMusic(){
-    if (musicOn) return;
-    if (!initMusic()) return;
-    if (AC.state === "suspended") AC.resume();
-    musicOn = true;
-    var t = AC.currentTime;
-    master.gain.cancelScheduledValues(t);
-    master.gain.setValueAtTime(0.0001, t);
-    master.gain.linearRampToValueAtTime(0.85, t + 3.5);
-    var btn = document.getElementById("music");
-    if (btn) btn.classList.add("on");
-    loopNotes();
-  }
-
-  function stopMusic(){
-    if (!musicOn) return;
-    musicOn = false;
-    clearTimeout(noteTimer);
-    var btn = document.getElementById("music");
-    if (btn) btn.classList.remove("on");
-    if (!AC) return;
-    var t = AC.currentTime;
-    master.gain.cancelScheduledValues(t);
-    master.gain.setValueAtTime(master.gain.value, t);
-    master.gain.linearRampToValueAtTime(0.0001, t + 1.4);
+  function stopBgm(){
+    setBgmBtn(false);
+    fadeBgmTo(0, 1500);
   }
 
   document.getElementById("music").addEventListener("click", function(){
-    if (musicOn) stopMusic(); else startMusic();
+    if (!bgmEl) return;
+    if (bgmEl.paused) playBgm(); else stopBgm();
   });
+
+  /* ---------- 标题卡三段递进 ---------- */
+  var cardEl = document.getElementById("card");
+  function showCard(){
+    cardEl.classList.add("on");
+    setTimeout(function(){ cardEl.classList.add("st1"); }, 260);
+    setTimeout(function(){ cardEl.classList.add("st2"); }, 1800);
+    setTimeout(function(){ cardEl.classList.add("st3"); }, 3400);
+  }
 
   /* ---------- 启动 ---------- */
   function startShow(){
@@ -755,7 +767,7 @@ var CONFIG = {
   document.getElementById("next").addEventListener("click", function(){
     if (phase !== "card") return;
     wishEl.classList.remove("on");
-    startMusic();
+    playBgm();
     document.getElementById("card").classList.remove("on");
     setTimeout(function(){
       document.getElementById("card").style.display = "none";
@@ -799,8 +811,25 @@ var CONFIG = {
   window.addEventListener("resize", resize);
   resize();
 
+  var tapEl = document.getElementById("tap");
+  if (tapEl){
+    tapEl.addEventListener("click", function(){
+      if (tapEl.classList.contains("gone")) return;
+      tapEl.classList.add("gone");
+      setTimeout(function(){ tapEl.style.display = "none"; }, 950);
+      playBgm();
+      startShow();
+    });
+  }
+
   if (CONFIG.needCode){
     phase = "gate";
+    tapEl.style.display = "none";
+    document.getElementById("skip").style.display = "none";
+  } else if (!CONFIG.autoStart){
+    phase = "gate";
+    tapEl.style.display = "flex";
+    document.getElementById("gate").style.display = "none";
     document.getElementById("skip").style.display = "none";
   } else {
     document.getElementById("gate").style.display = "none";
