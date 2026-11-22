@@ -836,7 +836,6 @@ var CONFIG = {
       if (iv) clearInterval(iv);
       try { bgmEl.currentTime = BGM_START; } catch (e) {}
       if (bgmEl.paused){ var p = bgmEl.play(); if (p && p.catch) p.catch(function(){}); }
-      document.title = "BGM_AT " + (performance.now() / 1000).toFixed(1);
       fadeBgmTo(0.5, 1200);
     };
     iv = setInterval(function(){
