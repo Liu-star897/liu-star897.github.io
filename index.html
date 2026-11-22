@@ -871,10 +871,34 @@ var CONFIG = {
     var shotGo = document.getElementById("shot-go");
     if (!saveBtn || !shotEl || !shotImg) return;
 
+    /* 存下来的图里补上日期（网页上那两行是 DOM，画布上没有） */
+    function spacedText(t, str, cx, cy, size, spacing, color){
+      t.font = size + 'px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+      t.textAlign = "left";
+      t.textBaseline = "middle";
+      var ws = [], total = 0, i;
+      for (i = 0; i < str.length; i++){ ws.push(t.measureText(str[i]).width); total += ws[i]; }
+      total += spacing * Math.max(0, str.length - 1);
+      var x = cx - total / 2;
+      t.fillStyle = color;
+      for (i = 0; i < str.length; i++){ t.fillText(str[i], x, cy); x += ws[i] + spacing; }
+    }
+
+    function shotUrl(){
+      var tmp = document.createElement("canvas");
+      tmp.width = cv.width; tmp.height = cv.height;
+      var t = tmp.getContext("2d");
+      t.drawImage(cv, 0, 0);
+      t.setTransform(DPR, 0, 0, DPR, 0, 0);
+      spacedText(t, CONFIG.sub1, W / 2, H * 0.775, 15, 6.2, "rgba(152,168,200,0.95)");
+      spacedText(t, "生日快乐 · 第十九个冬天", W / 2, H * 0.822, 10.5, 3.4, "rgba(92,104,138,0.95)");
+      return tmp.toDataURL("image/png");
+    }
+
     saveBtn.addEventListener("click", function(ev){
       ev.stopPropagation();
       var url;
-      try { url = cv.toDataURL("image/png"); } catch (e) { return; }
+      try { url = shotUrl(); } catch (e) { return; }
       shotImg.src = url;
       hold = true;
       document.getElementById("fade").classList.remove("on");
