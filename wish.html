@@ -17,29 +17,60 @@
   #box > img{width:100%;height:100%;display:block;object-fit:contain;pointer-events:none}
   #fx{position:absolute;inset:0;overflow:hidden;pointer-events:none}
 
-  .coin{position:absolute;width:13px;height:13px;border-radius:50%;
-        margin:-6.5px 0 0 -6.5px;left:0;top:0;opacity:0;
-        background:radial-gradient(circle at 34% 28%,#fff2c0,#e6b451 58%,#8f5c15);
-        box-shadow:0 0 12px rgba(255,202,112,.95),0 0 3px rgba(255,255,255,.8);
-        transition:transform .58s cubic-bezier(.4,.02,.6,.98),opacity .58s}
+  /* 金币 */
+  .coin{position:absolute;width:26px;height:26px;border-radius:50%;
+        margin:-13px 0 0 -13px;left:0;top:0;opacity:0;
+        background:radial-gradient(circle at 34% 28%,#fff6d0,#eec25c 55%,#8f5c15);
+        box-shadow:0 0 16px rgba(255,206,120,1),0 0 5px rgba(255,255,255,.9);
+        transition:transform .62s cubic-bezier(.4,.02,.6,.98),opacity .62s}
+  .coin::after{content:"";position:absolute;left:50%;top:50%;width:9px;height:9px;
+        margin:-4.5px 0 0 -4.5px;border-radius:50%;
+        border:1.4px solid rgba(150,95,25,.55)}
+
+  /* 涟漪 */
   .ripple{position:absolute;border-radius:50%;margin:0;
-        border:1.4px solid rgba(255,214,150,.8);
-        transform:translate(-50%,-50%) scale(.18);opacity:.95;
-        animation:rip 1.7s ease-out forwards}
+        border:2px solid rgba(255,236,196,.95);
+        box-shadow:0 0 12px rgba(255,214,150,.7),inset 0 0 10px rgba(255,214,150,.5);
+        transform:translate(-50%,-50%) scale(.14);opacity:1;
+        animation:rip 1.9s cubic-bezier(.12,.7,.3,1) forwards}
   @keyframes rip{ to{ transform:translate(-50%,-50%) scale(1); opacity:0 } }
-  .heart{position:absolute;transform:translate(-50%,-50%);font-size:23px;line-height:1;
-        color:#ff9fc4;text-shadow:0 0 15px rgba(255,110,165,.9),0 0 34px rgba(255,90,150,.45);
+
+  /* 水花：一圈白光 + 飞起的水珠 */
+  .flash{position:absolute;border-radius:50%;transform:translate(-50%,-50%) scale(.3);
+        background:radial-gradient(circle,rgba(255,246,220,.95),rgba(255,220,160,.5) 45%,rgba(255,210,150,0) 72%);
+        animation:fl .5s ease-out forwards}
+  @keyframes fl{ to{ opacity:0; transform:translate(-50%,-50%) scale(1.9) } }
+
+  .drop{position:absolute;width:4px;height:4px;border-radius:50%;margin:-2px 0 0 -2px;
+        background:#fff8e2;box-shadow:0 0 7px rgba(255,235,190,1);
+        animation:dr 1s cubic-bezier(.25,.6,.4,1) forwards}
+  @keyframes dr{
+    0%{ opacity:1; transform:translate(0,0) scale(1) }
+    52%{ opacity:1; transform:translate(var(--dx),var(--dy)) scale(.95) }
+    100%{ opacity:0; transform:translate(calc(var(--dx) * 1.55), 16px) scale(.6) }
+  }
+
+  /* 爱心 */
+  .heart{position:absolute;transform:translate(-50%,-50%);line-height:1;
+        --wx:0px; --hy:210px;
+        color:#ff9fc4;text-shadow:0 0 15px rgba(255,110,165,.95),0 0 36px rgba(255,90,150,.5);
         animation:up 2.9s cubic-bezier(.2,.5,.3,1) forwards}
   @keyframes up{
     0%{ opacity:0; transform:translate(-50%,-50%) scale(.35) }
-    16%{ opacity:1; transform:translate(-50%,-52%) scale(1.05) }
-    72%{ opacity:.92; transform:translate(-50%,-115%) scale(1) }
-    100%{ opacity:0; transform:translate(-50%,-168%) scale(1.12) }
+    15%{ opacity:1; transform:translate(calc(-50% + var(--wx) * .18), calc(-50% - var(--hy) * .12)) scale(1.06) }
+    68%{ opacity:.94; transform:translate(calc(-50% + var(--wx) * .78), calc(-50% - var(--hy) * .74)) scale(1) }
+    100%{ opacity:0; transform:translate(calc(-50% + var(--wx)), calc(-50% - var(--hy))) scale(1.12) }
   }
-  .spark{position:absolute;width:3px;height:3px;border-radius:50%;margin:-1.5px 0 0 -1.5px;
-        background:#fff3cf;box-shadow:0 0 8px rgba(255,220,150,.95);
-        animation:sp .9s ease-out forwards}
-  @keyframes sp{ to{ opacity:0; transform:translate(var(--dx),var(--dy)) scale(.4) } }
+
+  /* 井口的光晕（攒满时用） */
+  .glow{position:absolute;border-radius:50%;transform:translate(-50%,-50%);
+        background:radial-gradient(circle,rgba(255,244,214,.9),rgba(255,206,150,.34) 42%,rgba(255,190,120,0) 70%);
+        animation:gl 2.4s ease-out forwards}
+  @keyframes gl{
+    0%{ opacity:0; transform:translate(-50%,-50%) scale(.4) }
+    22%{ opacity:1; transform:translate(-50%,-50%) scale(1) }
+    100%{ opacity:0; transform:translate(-50%,-50%) scale(1.5) }
+  }
 
   #head{position:absolute;left:0;right:0;top:0;padding:2.4vh 4vw 5vh;text-align:center;
         background:linear-gradient(180deg,rgba(4,7,16,.86),rgba(4,7,16,.34) 62%,rgba(4,7,16,0));
@@ -60,12 +91,16 @@
   #back:hover{color:#fff;border-color:rgba(214,228,255,.6);background:rgba(20,28,48,.8)}
 
   #tip{position:absolute;left:50%;bottom:3.2vh;transform:translateX(-50%);
-       white-space:nowrap;z-index:3;pointer-events:none;
-       font-size:clamp(10px,1.05vw,13px);letter-spacing:.22em;color:#e6d3ac;
-       padding:.62em 1.2em;border-radius:999px;
+       display:flex;align-items:center;gap:.85em;white-space:nowrap;z-index:3;
+       pointer-events:none;font-size:clamp(10px,1.05vw,13px);letter-spacing:.2em;
+       color:#e6d3ac;padding:.62em 1.25em;border-radius:999px;
        background:rgba(6,9,18,.58);border:1px solid rgba(255,206,150,.2);
        backdrop-filter:blur(3px);text-shadow:0 1px 10px rgba(0,0,0,.9);
        transition:color .4s,border-color .4s}
+  #dots{display:flex;gap:5px}
+  .dot{width:5px;height:5px;border-radius:50%;background:rgba(230,211,172,.26);
+       transition:background .4s,box-shadow .4s,transform .3s}
+  .dot.on{background:#ffd98a;box-shadow:0 0 9px rgba(255,205,120,.95);transform:scale(1.15)}
 </style>
 </head>
 <body>
@@ -76,21 +111,35 @@
 
 <div id="head">
   <h1>许 个 愿</h1>
-  <p>扔一枚硬币进去，愿望会浮上来</p>
+  <p>扔五枚硬币进去</p>
 </div>
 
 <a id="back" href="home.html">← 回夜市</a>
-<div id="tip">点 一 下 水 面</div>
+<div id="tip"><span id="tiptext">点 一 下 水 面</span><span id="dots"></span></div>
 
 <script>
 (function(){
   var box = document.getElementById("box");
   var fx = document.getElementById("fx");
   var tip = document.getElementById("tip");
-  var thrown = 0;
+  var tipText = document.getElementById("tiptext");
+  var dotsEl = document.getElementById("dots");
 
-  /* 水面中心（相对舞台的百分比），由图片里井口的位置定的 */
+  var NEED = 5;
+  var thrown = 0;
+  var busy = false;
+
+  /* 水面中心（相对舞台的百分比） */
   var CX = 0.518, CY = 0.718;
+
+  /* 五个小圆点 */
+  var dots = [];
+  for (var i = 0; i < NEED; i++){
+    var d = document.createElement("span");
+    d.className = "dot";
+    dotsEl.appendChild(d);
+    dots.push(d);
+  }
 
   function make(cls){
     var el = document.createElement("div");
@@ -98,50 +147,169 @@
     return el;
   }
 
-  function splash(cx, cy){
-    /* 涟漪 */
-    for (var i = 0; i < 3; i++){
+  /* ---------- 声音：现场合成的落水声 ---------- */
+  var actx = null;
+  function audio(){
+    if (!actx){
+      try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
+    }
+    if (actx.state === "suspended"){ try { actx.resume(); } catch (e) {} }
+    return actx;
+  }
+
+  function splashSound(strong){
+    var a = audio();
+    if (!a) return;
+    var t = a.currentTime;
+
+    var o = a.createOscillator(), g = a.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(strong ? 300 : 430, t);
+    o.frequency.exponentialRampToValueAtTime(strong ? 90 : 150, t + (strong ? 0.3 : 0.19));
+    g.gain.setValueAtTime(strong ? 0.3 : 0.2, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + (strong ? 0.42 : 0.3));
+    o.connect(g); g.connect(a.destination);
+    o.start(t); o.stop(t + 0.45);
+
+    var len = Math.floor(a.sampleRate * (strong ? 0.42 : 0.26));
+    var buf = a.createBuffer(1, len, a.sampleRate);
+    var ch = buf.getChannelData(0);
+    for (var n = 0; n < len; n++){
+      ch[n] = (Math.random() * 2 - 1) * Math.pow(1 - n / len, 2.6);
+    }
+    var src = a.createBufferSource(); src.buffer = buf;
+    var bp = a.createBiquadFilter();
+    bp.type = "bandpass"; bp.frequency.value = strong ? 2100 : 2700; bp.Q.value = 1.1;
+    var g2 = a.createGain();
+    g2.gain.setValueAtTime(strong ? 0.17 : 0.1, t + 0.015);
+    g2.gain.exponentialRampToValueAtTime(0.001, t + (strong ? 0.4 : 0.24));
+    src.connect(bp); bp.connect(g2); g2.connect(a.destination);
+    src.start(t + 0.015);
+  }
+
+  /* 攒满时的一小段上扬音 */
+  function chimeSound(){
+    var a = audio();
+    if (!a) return;
+    var t = a.currentTime;
+    [523.25, 659.25, 783.99, 1046.5].forEach(function(f, i){
+      var o = a.createOscillator(), g = a.createGain();
+      o.type = "sine";
+      o.frequency.setValueAtTime(f, t + i * 0.11);
+      g.gain.setValueAtTime(0, t + i * 0.11);
+      g.gain.linearRampToValueAtTime(0.075, t + i * 0.11 + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.11 + 0.9);
+      o.connect(g); g.connect(a.destination);
+      o.start(t + i * 0.11); o.stop(t + i * 0.11 + 1);
+    });
+  }
+
+  /* ---------- 画面 ---------- */
+  function splash(cx, cy, strong){
+    var flash = make("flash");
+    var fz = strong ? 150 : 92;
+    flash.style.width = fz + "px";
+    flash.style.height = fz * 0.44 + "px";
+    flash.style.left = cx + "px";
+    flash.style.top = cy + "px";
+    fx.appendChild(flash);
+    setTimeout(function(){ if (flash.parentNode) flash.parentNode.removeChild(flash); }, 600);
+
+    var rings = strong ? 4 : 3;
+    for (var i = 0; i < rings; i++){
       (function(i){
         setTimeout(function(){
           var r = make("ripple");
-          var size = 46 + i * 34;
+          var size = (strong ? 70 : 54) + i * (strong ? 52 : 40);
           r.style.width = size + "px";
           r.style.height = size * 0.42 + "px";
-          r.style.left = (cx + (Math.random() - 0.5) * 10) + "px";
-          r.style.top = (cy + (Math.random() - 0.5) * 5) + "px";
+          r.style.left = (cx + (Math.random() - 0.5) * 8) + "px";
+          r.style.top = (cy + (Math.random() - 0.5) * 4) + "px";
           fx.appendChild(r);
-          setTimeout(function(){ if (r.parentNode) r.parentNode.removeChild(r); }, 1800);
-        }, i * 190);
+          setTimeout(function(){ if (r.parentNode) r.parentNode.removeChild(r); }, 2000);
+        }, i * 170);
       })(i);
     }
 
-    /* 溅起的金色小点 */
-    for (var k = 0; k < 9; k++){
+    var drops = strong ? 18 : 12;
+    for (var k = 0; k < drops; k++){
       (function(k){
-        var s = make("spark");
+        var s = make("drop");
+        var spread = strong ? 105 : 74;
         s.style.left = cx + "px";
         s.style.top = cy + "px";
-        s.style.setProperty("--dx", ((Math.random() - 0.5) * 90) + "px");
-        s.style.setProperty("--dy", (-20 - Math.random() * 46) + "px");
-        s.style.animationDelay = (Math.random() * 0.16) + "s";
+        s.style.setProperty("--dx", ((Math.random() - 0.5) * spread) + "px");
+        s.style.setProperty("--dy", (-16 - Math.random() * (strong ? 78 : 52)) + "px");
+        s.style.animationDelay = (Math.random() * 0.1) + "s";
+        var sz = 2.6 + Math.random() * 2.6;
+        s.style.width = sz + "px"; s.style.height = sz + "px";
         fx.appendChild(s);
-        setTimeout(function(){ if (s.parentNode) s.parentNode.removeChild(s); }, 1300);
+        setTimeout(function(){ if (s.parentNode) s.parentNode.removeChild(s); }, 1200);
       })(k);
     }
   }
 
-  function heart(cx, cy){
-    var h = make("heart");
-    h.textContent = "♥";
-    h.style.left = (cx + (Math.random() - 0.5) * 62) + "px";
-    h.style.top = (cy - 6) + "px";
-    h.style.fontSize = (19 + Math.random() * 11) + "px";
-    h.style.animationDuration = (2.5 + Math.random() * 0.8) + "s";
-    fx.appendChild(h);
-    setTimeout(function(){ if (h.parentNode) h.parentNode.removeChild(h); }, 3600);
+  function heartAt(cx, cy, delay, size, drift, rise){
+    setTimeout(function(){
+      var h = make("heart");
+      h.textContent = "♥";
+      h.style.left = (cx + (Math.random() - 0.5) * 150) + "px";
+      h.style.top = (cy + (Math.random() - 0.5) * 16) + "px";
+      h.style.fontSize = size + "px";
+      h.style.setProperty("--wx", drift + "px");
+      h.style.setProperty("--hy", rise + "px");
+      h.style.animationDuration = (2.8 + Math.random() * 1.2) + "s";
+      if (Math.random() < 0.3) h.style.color = "#ffb8d8";
+      if (Math.random() < 0.18) h.style.color = "#ffd6a0";
+      fx.appendChild(h);
+      setTimeout(function(){ if (h.parentNode) h.parentNode.removeChild(h); }, 4600);
+    }, delay);
+  }
+
+  /* 五枚攒满：井口亮起来，一段爱心升上来 */
+  function bigWish(cx, cy){
+    var glow = make("glow");
+    glow.style.width = "270px";
+    glow.style.height = "150px";
+    glow.style.left = cx + "px";
+    glow.style.top = cy + "px";
+    fx.appendChild(glow);
+    setTimeout(function(){ if (glow.parentNode) glow.parentNode.removeChild(glow); }, 2600);
+
+    for (var i = 0; i < 18; i++){
+      heartAt(cx, cy, 100 + i * 95, 16 + Math.random() * 17,
+              (Math.random() - 0.5) * 190, 150 + Math.random() * 160);
+    }
+    for (var k = 0; k < 22; k++){
+      (function(k){
+        setTimeout(function(){
+          var s = make("drop");
+          s.style.left = (cx + (Math.random() - 0.5) * 120) + "px";
+          s.style.top = cy + "px";
+          s.style.setProperty("--dx", ((Math.random() - 0.5) * 60) + "px");
+          s.style.setProperty("--dy", (-40 - Math.random() * 90) + "px");
+          s.style.background = "rgba(255,232,180,.95)";
+          fx.appendChild(s);
+          setTimeout(function(){ if (s.parentNode) s.parentNode.removeChild(s); }, 1300);
+        }, k * 60);
+      })(k);
+    }
+
+    chimeSound();
+  }
+
+  function updateTip(){
+    if (thrown === 0){ tipText.textContent = "点 一 下 水 面"; }
+    else if (thrown >= NEED){ tipText.textContent = "愿 望 已 收 下"; }
+    else { tipText.textContent = "还 差 " + (NEED - thrown) + " 枚"; }
+    for (var i = 0; i < NEED; i++){
+      if (i < thrown) dots[i].classList.add("on");
+      else dots[i].classList.remove("on");
+    }
   }
 
   function throwCoin(px, py){
+    if (busy) return;
     var w = box.clientWidth, h = box.clientHeight;
     var cx = w * CX, cy = h * CY;
 
@@ -153,22 +321,35 @@
     requestAnimationFrame(function(){
       requestAnimationFrame(function(){
         coin.style.opacity = "1";
-        coin.style.transform = "translate(" + (cx - px) + "px," + (cy - py) + "px) scale(.62)";
+        coin.style.transform = "translate(" + (cx - px) + "px," + (cy - py) + "px) scale(.5) rotate(220deg)";
       });
     });
 
     setTimeout(function(){
       if (coin.parentNode) coin.parentNode.removeChild(coin);
-      splash(cx, cy);
-      setTimeout(function(){
-        heart(cx, cy);
-        if (thrown === 1) tip.textContent = "愿 望 已 记 下";
-        else if (thrown === 6) tip.textContent = "还 可 以 再 来 一 枚";
-      }, 130);
-    }, 600);
 
-    thrown++;
-    if (thrown === 1) tip.textContent = "再 扔 一 枚 也 可 以";
+      thrown++;
+      if (thrown > NEED) thrown = NEED;
+      updateTip();
+
+      var last = (thrown >= NEED);
+      splash(cx, cy, last);
+      splashSound(last);
+
+      if (last){
+        busy = true;
+        bigWish(cx, cy);
+        setTimeout(function(){
+          thrown = 0;
+          busy = false;
+          updateTip();
+          tipText.textContent = "可 以 再 许 一 次";
+          setTimeout(function(){
+            if (!busy && thrown === 0) tipText.textContent = "点 一 下 水 面";
+          }, 3400);
+        }, 3800);
+      }
+    }, 660);
   }
 
   box.addEventListener("click", function(e){
@@ -182,6 +363,8 @@
     var t = e.touches[0];
     throwCoin(t.clientX - rect.left, t.clientY - rect.top);
   }, { passive: true });
+
+  updateTip();
 })();
 </script>
 </body>
