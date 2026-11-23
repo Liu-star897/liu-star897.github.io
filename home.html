@@ -43,6 +43,10 @@
   .hot .tag i{font-style:normal;opacity:.55;padding:0 .3em}
   .hot.soon .tag{color:#b9c3d6;border-color:rgba(160,180,220,.22);background:rgba(8,12,24,.5)}
 
+  #hint{display:none;margin-top:1.2vh;font-size:clamp(10px,2.9vw,13px);
+        letter-spacing:.14em;color:#f0cd92;opacity:.85;
+        text-shadow:0 1px 10px rgba(0,0,0,.8)}
+
   #list{display:none;position:absolute;left:0;right:0;bottom:0;z-index:4;
         padding:0 0 6.5vh;flex-direction:column;align-items:center;gap:2vh}
   #list a,#list div{width:min(72vw,340px);text-align:center;text-decoration:none;
@@ -59,6 +63,7 @@
     .hot{display:none}
     #list{display:flex}
     #head{padding-top:3.4vh}
+    #hint{display:block}
   }
 
   #fade{position:fixed;inset:0;background:#05070f;opacity:0;pointer-events:none;
@@ -94,6 +99,7 @@
     <p class="k">HAPPY BIRTHDAY</p>
     <h1>葛成璐，生日快乐</h1>
     <p class="s">今晚这条街，是给你一个人开的</p>
+    <p id="hint">↻ 横过来看，整条街都在</p>
   </div>
 </div></div>
 <div id="fade"></div>
