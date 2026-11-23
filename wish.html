@@ -3,204 +3,185 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>许愿池</title>
+<title>许 个 愿</title>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  html,body{height:100%;overflow:hidden;background:#05080f}
-  body{font-family:"Songti SC","STSong","Noto Serif SC",serif;color:#e8eefc}
-  #sky{position:fixed;inset:0;width:100%;height:100%}
-  .back{position:fixed;left:18px;top:16px;z-index:6;font-size:13px;letter-spacing:.12em;
-    color:#cbd6ee;text-decoration:none;padding:9px 16px;border:1px solid rgba(160,180,220,.22);
-    border-radius:999px;background:rgba(10,16,30,.55);backdrop-filter:blur(6px)}
-  .wrap{position:relative;height:100%;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;gap:2.4vh;padding:0 6vw}
-  h1{font-size:clamp(26px,4vw,44px);font-weight:500;letter-spacing:.18em;
-     background:linear-gradient(180deg,#fff6e2,#f0cd92);-webkit-background-clip:text;
-     background-clip:text;color:transparent}
-  .tip{font-size:clamp(11px,1.2vw,14px);letter-spacing:.16em;color:#96a4c3;text-align:center}
-  #pond{position:relative;width:min(76vw,54vh);aspect-ratio:1/1;cursor:pointer}
-  #water{width:100%;height:100%;display:block}
-  #fade{position:fixed;inset:0;background:#05080f;opacity:0;pointer-events:none;
-        transition:opacity .4s;z-index:9}
-  #fade.on{opacity:1}
-  body{animation:in .8s ease both}
-  @keyframes in{from{opacity:0}to{opacity:1}}
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;background:#05070f;overflow:hidden}
+  body{font-family:"Songti SC","STSong","Noto Serif SC",serif;color:#e8eefc;
+       animation:pageIn .9s ease both;user-select:none}
+  @keyframes pageIn{from{opacity:0}to{opacity:1}}
+
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+  #box{position:relative;width:min(100vw, calc(100vh * 16 / 9));
+       height:min(100vh, calc(100vw * 9 / 16));cursor:pointer}
+  #box > img{width:100%;height:100%;display:block;object-fit:contain;pointer-events:none}
+  #fx{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+
+  .coin{position:absolute;width:13px;height:13px;border-radius:50%;
+        margin:-6.5px 0 0 -6.5px;left:0;top:0;opacity:0;
+        background:radial-gradient(circle at 34% 28%,#fff2c0,#e6b451 58%,#8f5c15);
+        box-shadow:0 0 12px rgba(255,202,112,.95),0 0 3px rgba(255,255,255,.8);
+        transition:transform .58s cubic-bezier(.4,.02,.6,.98),opacity .58s}
+  .ripple{position:absolute;border-radius:50%;margin:0;
+        border:1.4px solid rgba(255,214,150,.8);
+        transform:translate(-50%,-50%) scale(.18);opacity:.95;
+        animation:rip 1.7s ease-out forwards}
+  @keyframes rip{ to{ transform:translate(-50%,-50%) scale(1); opacity:0 } }
+  .heart{position:absolute;transform:translate(-50%,-50%);font-size:23px;line-height:1;
+        color:#ff9fc4;text-shadow:0 0 15px rgba(255,110,165,.9),0 0 34px rgba(255,90,150,.45);
+        animation:up 2.9s cubic-bezier(.2,.5,.3,1) forwards}
+  @keyframes up{
+    0%{ opacity:0; transform:translate(-50%,-50%) scale(.35) }
+    16%{ opacity:1; transform:translate(-50%,-52%) scale(1.05) }
+    72%{ opacity:.92; transform:translate(-50%,-115%) scale(1) }
+    100%{ opacity:0; transform:translate(-50%,-168%) scale(1.12) }
+  }
+  .spark{position:absolute;width:3px;height:3px;border-radius:50%;margin:-1.5px 0 0 -1.5px;
+        background:#fff3cf;box-shadow:0 0 8px rgba(255,220,150,.95);
+        animation:sp .9s ease-out forwards}
+  @keyframes sp{ to{ opacity:0; transform:translate(var(--dx),var(--dy)) scale(.4) } }
+
+  #head{position:absolute;left:0;right:0;top:0;padding:2.4vh 4vw 5vh;text-align:center;
+        background:linear-gradient(180deg,rgba(4,7,16,.86),rgba(4,7,16,.34) 62%,rgba(4,7,16,0));
+        pointer-events:none;z-index:3}
+  #head h1{font-size:clamp(20px,2.9vw,38px);font-weight:500;letter-spacing:.42em;
+        text-shadow:0 2px 18px rgba(0,0,0,.8);
+        background:linear-gradient(180deg,#fff7e6,#f0cd92);-webkit-background-clip:text;
+        background-clip:text;color:transparent}
+  #head p{margin-top:1vh;font-size:clamp(10px,1.05vw,13px);letter-spacing:.2em;color:#a9b9d6;
+        text-shadow:0 1px 10px rgba(0,0,0,.85)}
+
+  #back{position:fixed;left:max(14px,2.4vw);top:max(14px,2.4vh);z-index:6;
+        display:inline-flex;align-items:center;gap:.4em;text-decoration:none;
+        font-size:clamp(11px,1.05vw,13px);letter-spacing:.14em;color:#c6d2ea;
+        padding:.62em 1.15em;border-radius:999px;
+        background:rgba(8,12,24,.55);border:1px solid rgba(180,200,240,.22);
+        backdrop-filter:blur(4px);transition:.28s}
+  #back:hover{color:#fff;border-color:rgba(214,228,255,.6);background:rgba(20,28,48,.8)}
+
+  #tip{position:absolute;left:50%;bottom:3.2vh;transform:translateX(-50%);
+       white-space:nowrap;z-index:3;pointer-events:none;
+       font-size:clamp(10px,1.05vw,13px);letter-spacing:.22em;color:#e6d3ac;
+       padding:.62em 1.2em;border-radius:999px;
+       background:rgba(6,9,18,.58);border:1px solid rgba(255,206,150,.2);
+       backdrop-filter:blur(3px);text-shadow:0 1px 10px rgba(0,0,0,.9);
+       transition:color .4s,border-color .4s}
 </style>
 </head>
 <body>
-<canvas id="sky"></canvas>
-<a class="back" href="home.html">← 回夜市</a>
+<div id="wrap"><div id="box">
+  <img src="img/wish.jpg" alt="许愿池">
+  <div id="fx"></div>
+</div></div>
 
-<div class="wrap">
-  <div style="text-align:center">
-    <h1>许 愿 池</h1>
-    <p class="tip" style="margin-top:1.4vh">往池子里扔一枚硬币，把想说的说给它听</p>
-  </div>
-  <div id="pond"><canvas id="water"></canvas></div>
-  <p class="tip" id="hint">点一下水面</p>
+<div id="head">
+  <h1>许 个 愿</h1>
+  <p>扔一枚硬币进去，愿望会浮上来</p>
 </div>
 
-<div id="fade"></div>
+<a id="back" href="home.html">← 回夜市</a>
+<div id="tip">点 一 下 水 面</div>
 
 <script>
 (function(){
-  /* 夜空 */
-  var sky = document.getElementById("sky"), sctx = sky.getContext("2d");
-  function drawSky(){
-    var dpr = Math.min(2, devicePixelRatio || 1);
-    var W = innerWidth, H = innerHeight;
-    sky.width = W * dpr; sky.height = H * dpr;
-    sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    var g = sctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, "#060b1a"); g.addColorStop(1, "#05080f");
-    sctx.fillStyle = g; sctx.fillRect(0, 0, W, H);
-    for (var i = 0; i < 260; i++){
-      var x = Math.random() * W, y = Math.random() * H * .8;
-      sctx.beginPath();
-      sctx.arc(x, y, .3 + Math.pow(Math.random(), 3) * 1.2, 0, 6.2832);
-      sctx.fillStyle = "rgba(226,238,255," + (0.14 + Math.random() * 0.45).toFixed(3) + ")";
-      sctx.fill();
-    }
-  }
-  drawSky();
-  addEventListener("resize", drawSky);
+  var box = document.getElementById("box");
+  var fx = document.getElementById("fx");
+  var tip = document.getElementById("tip");
+  var thrown = 0;
 
-  /* 池子 */
-  var pond = document.getElementById("pond");
-  var cv = document.getElementById("water");
-  var ctx = cv.getContext("2d");
-  var W = 0, H = 0, dpr = Math.min(2, devicePixelRatio || 1);
-  var ripples = [], coins = [], hearts = [];
+  /* 水面中心（相对舞台的百分比），由图片里井口的位置定的 */
+  var CX = 0.518, CY = 0.718;
 
-  function layout(){
-    W = pond.clientWidth; H = pond.clientHeight;
-    cv.width = W * dpr; cv.height = H * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-  layout();
-  addEventListener("resize", function(){ layout(); });
-
-  function drawBase(){
-    ctx.clearRect(0, 0, W, H);
-    var cx = W / 2, cy = H * .56, rx = W * .44, ry = H * .30;
-
-    /* 池壁 */
-    ctx.save();
-    ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, 6.2832);
-    ctx.fillStyle = "rgba(14,22,38,.92)"; ctx.fill();
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = "rgba(150,170,210,.28)"; ctx.stroke();
-    ctx.restore();
-
-    /* 水面 */
-    var wg = ctx.createRadialGradient(cx, cy - ry * .3, 0, cx, cy, rx);
-    wg.addColorStop(0, "rgba(58,96,150,.55)");
-    wg.addColorStop(.6, "rgba(24,42,72,.85)");
-    wg.addColorStop(1, "rgba(10,18,32,.95)");
-    ctx.save();
-    ctx.beginPath(); ctx.ellipse(cx, cy, rx * .94, ry * .92, 0, 0, 6.2832);
-    ctx.fillStyle = wg; ctx.fill();
-    ctx.clip();
-    /* 水面上的星点 */
-    for (var i = 0; i < 26; i++){
-      var a = i * 2.399, r = Math.sqrt(i / 26) * rx * .8;
-      var px = cx + Math.cos(a) * r * .9, py = cy + Math.sin(a) * r * .34;
-      ctx.beginPath(); ctx.arc(px, py, .6 + (i % 3) * .5, 0, 6.2832);
-      ctx.fillStyle = "rgba(190,215,255," + (.12 + (i % 5) * .06).toFixed(2) + ")";
-      ctx.fill();
-    }
-    ctx.restore();
-
-    /* 池沿外一圈暖光 */
-    var og = ctx.createRadialGradient(cx, cy + ry * .5, rx * .2, cx, cy + ry * .5, rx * 1.35);
-    og.addColorStop(0, "rgba(255,186,110,.10)");
-    og.addColorStop(1, "rgba(255,186,110,0)");
-    ctx.fillStyle = og;
-    ctx.fillRect(0, 0, W, H);
+  function make(cls){
+    var el = document.createElement("div");
+    el.className = cls;
+    return el;
   }
 
-  var last = 0;
-  function frame(now){
-    var dt = last ? Math.min(.05, (now - last) / 1000) : .016;
-    last = now;
-    drawBase();
-
-    var cx = W / 2, cy = H * .56, rx = W * .44, ry = H * .30;
-
+  function splash(cx, cy){
     /* 涟漪 */
-    for (var i = ripples.length - 1; i >= 0; i--){
-      var r = ripples[i];
-      r.t += dt;
-      if (r.t > 2.4){ ripples.splice(i, 1); continue; }
-      var k = r.t / 2.4;
-      ctx.beginPath();
-      ctx.ellipse(r.x, r.y, r.r0 + k * rx * .55, (r.r0 + k * rx * .55) * .34, 0, 0, 6.2832);
-      ctx.strokeStyle = "rgba(200,225,255," + ((1 - k) * .42).toFixed(3) + ")";
-      ctx.lineWidth = 1.4;
-      ctx.stroke();
+    for (var i = 0; i < 3; i++){
+      (function(i){
+        setTimeout(function(){
+          var r = make("ripple");
+          var size = 46 + i * 34;
+          r.style.width = size + "px";
+          r.style.height = size * 0.42 + "px";
+          r.style.left = (cx + (Math.random() - 0.5) * 10) + "px";
+          r.style.top = (cy + (Math.random() - 0.5) * 5) + "px";
+          fx.appendChild(r);
+          setTimeout(function(){ if (r.parentNode) r.parentNode.removeChild(r); }, 1800);
+        }, i * 190);
+      })(i);
     }
 
-    /* 硬币 */
-    for (var j = coins.length - 1; j >= 0; j--){
-      var c = coins[j];
-      c.t += dt;
-      var p = Math.min(1, c.t / .55);
-      if (p < 1){
-        var yy = c.y0 + (cy - c.y0) * (p * p);
-        ctx.beginPath();
-        ctx.ellipse(c.x, yy, 5, 5 * (1 - p * .7), 0, 0, 6.2832);
-        ctx.fillStyle = "#ffd98c"; ctx.fill();
-        ctx.strokeStyle = "rgba(255,240,200,.8)"; ctx.lineWidth = .8; ctx.stroke();
-      } else if (!c.splashed){
-        c.splashed = true;
-        ripples.push({ x: c.x, y: cy, r0: 4, t: 0 });
-        hearts.push({ x: c.x, y: cy, t: 0 });
-      } else if (c.t > 1.2){
-        coins.splice(j, 1);
-      }
+    /* 溅起的金色小点 */
+    for (var k = 0; k < 9; k++){
+      (function(k){
+        var s = make("spark");
+        s.style.left = cx + "px";
+        s.style.top = cy + "px";
+        s.style.setProperty("--dx", ((Math.random() - 0.5) * 90) + "px");
+        s.style.setProperty("--dy", (-20 - Math.random() * 46) + "px");
+        s.style.animationDelay = (Math.random() * 0.16) + "s";
+        fx.appendChild(s);
+        setTimeout(function(){ if (s.parentNode) s.parentNode.removeChild(s); }, 1300);
+      })(k);
     }
-
-    /* 爱心 */
-    for (var h = hearts.length - 1; h >= 0; h--){
-      var it = hearts[h];
-      it.t += dt;
-      if (it.t > 3.2){ hearts.splice(h, 1); continue; }
-      var k = it.t / 3.2;
-      var y = it.y - k * ry * 2.2;
-      var a = Math.min(1, it.t / .4) * (1 - k);
-      var sc = .5 + k * 1.1;
-      ctx.save();
-      ctx.translate(it.x, y);
-      ctx.scale(sc, sc);
-      ctx.beginPath();
-      ctx.moveTo(0, 6);
-      ctx.bezierCurveTo(-9, -2, -6, -11, 0, -6.5);
-      ctx.bezierCurveTo(6, -11, 9, -2, 0, 6);
-      ctx.fillStyle = "rgba(255,150,175," + (a * .9).toFixed(3) + ")";
-      ctx.fill();
-      ctx.restore();
-    }
-
-    requestAnimationFrame(frame);
   }
-  requestAnimationFrame(frame);
 
-  var hint = document.getElementById("hint");
-  pond.addEventListener("click", function(e){
-    var rect = pond.getBoundingClientRect();
-    var x = e.clientX - rect.left, y = e.clientY - rect.top;
-    var cx = W / 2, cy = H * .56, rx = W * .44, ry = H * .30;
-    var dx = (x - cx) / rx, dy = (y - cy) / ry;
-    if (dx * dx + dy * dy > 1.05) return;
-    coins.push({ x: x, y0: y - H * .22, t: 0, splashed: false });
-    hint.textContent = "许愿了 · 再扔一枚也可以";
+  function heart(cx, cy){
+    var h = make("heart");
+    h.textContent = "♥";
+    h.style.left = (cx + (Math.random() - 0.5) * 62) + "px";
+    h.style.top = (cy - 6) + "px";
+    h.style.fontSize = (19 + Math.random() * 11) + "px";
+    h.style.animationDuration = (2.5 + Math.random() * 0.8) + "s";
+    fx.appendChild(h);
+    setTimeout(function(){ if (h.parentNode) h.parentNode.removeChild(h); }, 3600);
+  }
+
+  function throwCoin(px, py){
+    var w = box.clientWidth, h = box.clientHeight;
+    var cx = w * CX, cy = h * CY;
+
+    var coin = make("coin");
+    coin.style.left = px + "px";
+    coin.style.top = py + "px";
+    fx.appendChild(coin);
+
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        coin.style.opacity = "1";
+        coin.style.transform = "translate(" + (cx - px) + "px," + (cy - py) + "px) scale(.62)";
+      });
+    });
+
+    setTimeout(function(){
+      if (coin.parentNode) coin.parentNode.removeChild(coin);
+      splash(cx, cy);
+      setTimeout(function(){
+        heart(cx, cy);
+        if (thrown === 1) tip.textContent = "愿 望 已 记 下";
+        else if (thrown === 6) tip.textContent = "还 可 以 再 来 一 枚";
+      }, 130);
+    }, 600);
+
+    thrown++;
+    if (thrown === 1) tip.textContent = "再 扔 一 枚 也 可 以";
+  }
+
+  box.addEventListener("click", function(e){
+    var rect = box.getBoundingClientRect();
+    throwCoin(e.clientX - rect.left, e.clientY - rect.top);
   });
 
-  document.querySelector(".back").addEventListener("click", function(e){
-    e.preventDefault();
-    document.getElementById("fade").classList.add("on");
-    setTimeout(function(){ location.href = "home.html"; }, 380);
-  });
+  box.addEventListener("touchstart", function(e){
+    if (e.touches.length !== 1) return;
+    var rect = box.getBoundingClientRect();
+    var t = e.touches[0];
+    throwCoin(t.clientX - rect.left, t.clientY - rect.top);
+  }, { passive: true });
 })();
 </script>
 </body>
