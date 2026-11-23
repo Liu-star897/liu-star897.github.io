@@ -16,6 +16,7 @@
        height:min(100vh, calc(100vw * 9 / 16));cursor:pointer}
   #box > img{width:100%;height:100%;display:block;object-fit:contain;pointer-events:none}
   #fx{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+  #stage{position:absolute;inset:0;overflow:hidden;pointer-events:none}
 
   /* 金币 */
   .coin{position:absolute;width:26px;height:26px;border-radius:50%;
@@ -97,6 +98,37 @@
        background:rgba(6,9,18,.58);border:1px solid rgba(255,206,150,.2);
        backdrop-filter:blur(3px);text-shadow:0 1px 10px rgba(0,0,0,.9);
        transition:color .4s,border-color .4s}
+  /* 井底沉着的硬币 */
+  .bcoin{position:absolute;width:15px;height:15px;border-radius:50%;
+        transform:translate(-50%,-50%) scale(.3);opacity:0;
+        background:radial-gradient(circle at 36% 30%,#fff0bc,#dcab48 60%,#7d4f12);
+        box-shadow:0 0 9px rgba(255,200,110,.8);
+        transition:opacity .55s ease,transform .55s cubic-bezier(.2,1.4,.4,1)}
+  .bcoin.on{opacity:.92;transform:translate(-50%,-50%) scale(1)}
+
+  /* 廊架上的星灯 / 灯笼，投一枚亮一个 */
+  .lan{position:absolute;width:58px;height:58px;border-radius:50%;
+      transform:translate(-50%,-50%) scale(.7);opacity:0;pointer-events:none;
+      background:radial-gradient(circle,rgba(255,242,200,.95),rgba(255,208,140,.42) 46%,rgba(255,190,110,0) 74%);
+      transition:opacity .9s ease,transform .9s ease;filter:blur(1px)}
+  .lan.on{opacity:1;transform:translate(-50%,-50%) scale(1);
+      animation:lanPulse 3s ease-in-out infinite}
+  @keyframes lanPulse{
+    0%,100%{ transform:translate(-50%,-50%) scale(1) }
+    50%{ transform:translate(-50%,-50%) scale(1.14) }
+  }
+
+  /* 水里的月光倒影 */
+  #moon{position:absolute;width:15%;height:3.2%;border-radius:50%;
+      transform:translate(-50%,-50%);pointer-events:none;
+      background:radial-gradient(ellipse,rgba(226,240,255,.46),rgba(198,218,255,.14) 54%,rgba(190,210,255,0) 78%);
+      filter:blur(2.5px);transition:transform .2s ease;
+      animation:moonBreath 6.5s ease-in-out infinite}
+  @keyframes moonBreath{
+    0%,100%{ opacity:.62 }
+    50%{ opacity:.9 }
+  }
+
   #dots{display:flex;gap:5px}
   .dot{width:5px;height:5px;border-radius:50%;background:rgba(230,211,172,.26);
        transition:background .4s,box-shadow .4s,transform .3s}
@@ -107,6 +139,7 @@
 <div id="wrap"><div id="box">
   <img src="img/wish.jpg" alt="许愿池">
   <div id="fx"></div>
+  <div id="stage"></div>
 </div></div>
 
 <div id="head">
@@ -128,6 +161,61 @@
   var NEED = 5;
   var thrown = 0;
   var busy = false;
+
+  /* 廊架上的五个暖光点（三颗星灯 + 两盏地灯） */
+  var LANT = [[33.0, 49.3], [39.8, 49.6], [58.4, 48.8], [28.5, 90.2], [74.8, 90.4]];
+  /* 沉在井底的硬币位置 */
+  var BCOIN = [[46.2, 71.4], [54.6, 72.4], [49.0, 73.2], [57.0, 70.9], [51.0, 70.3]];
+
+  var stage = document.getElementById("stage");
+  var lantEls = [], coinEls = [];
+
+  LANT.forEach(function(p){
+    var el = document.createElement("span");
+    el.className = "lan";
+    el.style.left = p[0] + "%";
+    el.style.top = p[1] + "%";
+    stage.appendChild(el);
+    lantEls.push(el);
+  });
+
+  var moonEl = document.createElement("div");
+  moonEl.id = "moon";
+  moonEl.style.left = "51.8%";
+  moonEl.style.top = "71.1%";
+  stage.appendChild(moonEl);
+
+  BCOIN.forEach(function(p){
+    var el = document.createElement("span");
+    el.className = "bcoin";
+    el.style.left = p[0] + "%";
+    el.style.top = p[1] + "%";
+    stage.appendChild(el);
+    coinEls.push(el);
+  });
+
+  function wobbleMoon(){
+    var seq = [
+      ["translate(-50%,-50%) scale(1.4,.82)", 0],
+      ["translate(-50%,-50%) scale(.9,1.08)", 170],
+      ["translate(-50%,-50%) scale(1.08,.95)", 340],
+      ["translate(-50%,-50%) scale(1)", 540]
+    ];
+    seq.forEach(function(s){
+      setTimeout(function(){ moonEl.style.transform = s[0]; }, s[1]);
+    });
+  }
+
+  function lightUp(n){
+    if (lantEls[n - 1]) lantEls[n - 1].classList.add("on");
+    if (coinEls[n - 1]) coinEls[n - 1].classList.add("on");
+    wobbleMoon();
+  }
+
+  function resetLamps(){
+    lantEls.forEach(function(el){ el.classList.remove("on"); });
+    coinEls.forEach(function(el){ el.classList.remove("on"); });
+  }
 
   /* 水面中心（相对舞台的百分比） */
   var CX = 0.518, CY = 0.718;
@@ -331,6 +419,7 @@
       thrown++;
       if (thrown > NEED) thrown = NEED;
       updateTip();
+      lightUp(thrown);
 
       var last = (thrown >= NEED);
       splash(cx, cy, last);
@@ -343,6 +432,7 @@
           thrown = 0;
           busy = false;
           updateTip();
+          resetLamps();
           tipText.textContent = "可 以 再 许 一 次";
           setTimeout(function(){
             if (!busy && thrown === 0) tipText.textContent = "点 一 下 水 面";
