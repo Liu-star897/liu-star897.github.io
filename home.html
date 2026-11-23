@@ -74,7 +74,9 @@
         transition:background .3s,border-color .3s,opacity .3s,transform .2s}
   #music:hover{background:rgba(30,20,10,.8);border-color:rgba(255,214,160,.7)}
   #music.on{display:flex}
-  #music.hint{display:flex;animation:pulse 2.4s ease-in-out infinite}
+  #music.hint{display:flex;width:auto;padding:0 15px;border-radius:999px;
+        font-size:12px;letter-spacing:.12em;gap:4px;
+        animation:pulse 2.4s ease-in-out infinite}
   #music.muted{opacity:.45}
   @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,206,150,.4)}
                    50%{box-shadow:0 0 0 13px rgba(255,206,150,0)}}
@@ -133,8 +135,8 @@
       if (i >= steps){ clearInterval(rampTimer); rampTimer = null; bgm.volume = to; }
     }, 50);
   }
-  function started(){ playing = true; mbtn.className = "on"; mbtn.title = "点击暂停音乐"; }
-  function blocked(){ playing = false; mbtn.className = "hint"; mbtn.title = "点一下播放音乐"; }
+  function started(){ playing = true; mbtn.className = "on"; mbtn.title = "点击暂停音乐"; mbtn.textContent = "♪"; }
+  function blocked(){ playing = false; mbtn.className = "hint"; mbtn.title = "点一下播放音乐"; mbtn.textContent = "♪ 播放音乐"; }
   function startBgm(){
     bgm.volume = 0;
     var p = bgm.play();
