@@ -66,6 +66,19 @@
     #hint{display:block}
   }
 
+  #music{position:fixed;right:max(14px,3vw);top:max(14px,3vh);width:42px;height:42px;
+        border-radius:50%;display:none;align-items:center;justify-content:center;
+        background:rgba(10,14,26,.6);border:1px solid rgba(255,206,150,.35);
+        color:#ffdca8;font-size:17px;line-height:1;cursor:pointer;z-index:6;
+        font-family:serif;-webkit-tap-highlight-color:transparent;
+        transition:background .3s,border-color .3s,opacity .3s,transform .2s}
+  #music:hover{background:rgba(30,20,10,.8);border-color:rgba(255,214,160,.7)}
+  #music.on{display:flex}
+  #music.hint{display:flex;animation:pulse 2.4s ease-in-out infinite}
+  #music.muted{opacity:.45}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,206,150,.4)}
+                   50%{box-shadow:0 0 0 13px rgba(255,206,150,0)}}
+
   #fade{position:fixed;inset:0;background:#05070f;opacity:0;pointer-events:none;
         transition:opacity .4s;z-index:9}
   #fade.on{opacity:1}
@@ -102,9 +115,47 @@
     <p id="hint">↻ 横过来看，整条街都在</p>
   </div>
 </div></div>
+<button id="music" title="音乐">♪</button>
+<audio id="bgm" src="bgm/me-you.mp3" loop preload="auto"></audio>
 <div id="fade"></div>
 <script>
 (function(){
+  var bgm = document.getElementById("bgm");
+  var mbtn = document.getElementById("music");
+  var playing = false, rampTimer = null;
+
+  function ramp(to, ms){
+    if (rampTimer) clearInterval(rampTimer);
+    var from = bgm.volume, steps = Math.max(1, Math.round(ms / 50)), i = 0;
+    rampTimer = setInterval(function(){
+      i++;
+      bgm.volume = Math.min(1, Math.max(0, from + (to - from) * (i / steps)));
+      if (i >= steps){ clearInterval(rampTimer); rampTimer = null; bgm.volume = to; }
+    }, 50);
+  }
+  function started(){ playing = true; mbtn.className = "on"; mbtn.title = "点击暂停音乐"; }
+  function blocked(){ playing = false; mbtn.className = "hint"; mbtn.title = "点一下播放音乐"; }
+  function startBgm(){
+    bgm.volume = 0;
+    var p = bgm.play();
+    if (p && p.then){
+      p.then(function(){ started(); ramp(0.4, 2200); }).catch(blocked);
+    } else { started(); ramp(0.4, 2200); }
+  }
+  startBgm();
+
+  mbtn.addEventListener("click", function(){
+    if (playing){
+      bgm.pause(); playing = false; mbtn.className = "on muted"; mbtn.title = "点击播放音乐";
+    } else {
+      bgm.volume = 0;
+      var p = bgm.play();
+      if (p && p.then){
+        p.then(function(){ started(); ramp(0.4, 900); }).catch(blocked);
+      } else { started(); ramp(0.4, 900); }
+    }
+  });
+
   var links = document.querySelectorAll("a.hot, #list a");
   for (var i = 0; i < links.length; i++){
     (function(a){
