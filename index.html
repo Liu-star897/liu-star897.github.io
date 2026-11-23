@@ -128,6 +128,20 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:
 
 #fade{position:fixed;inset:0;z-index:9;background:#000206;opacity:0;pointer-events:none;transition:opacity 1.9s ease}
 #fade.on{opacity:1}
+
+/* 主会场：嵌在同一个页面里切过来，音乐才能接着用户那次点击自己响 */
+#hall{position:fixed;inset:0;width:100%;height:100%;border:0;background:#05070f;
+      opacity:0;pointer-events:none;transition:opacity .9s ease;z-index:5}
+#hall.on{opacity:1;pointer-events:auto}
+#hmusic{position:fixed;right:max(14px,3vw);top:max(14px,3vh);width:42px;height:42px;
+      border-radius:50%;display:none;align-items:center;justify-content:center;
+      background:rgba(10,14,26,.6);border:1px solid rgba(255,206,150,.35);
+      color:#ffdca8;font-size:17px;line-height:1;cursor:pointer;z-index:6;
+      font-family:serif;-webkit-tap-highlight-color:transparent;
+      transition:background .3s,border-color .3s,opacity .3s}
+#hmusic:hover{background:rgba(30,20,10,.8);border-color:rgba(255,214,160,.7)}
+#hmusic.on{display:flex}
+#hmusic.muted{opacity:.45}
 #skip{
   position:fixed;right:22px;bottom:20px;z-index:8;display:none;
   font-size:11px;letter-spacing:.22em;color:#39415a;cursor:pointer;padding:8px;
@@ -280,6 +294,9 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:
 <div id="skip">跳 过 →</div>
 <div id="music">♪</div>
 <audio id="bgm" src="bgm/9-teen.mp3?v=3" preload="auto" loop playsinline></audio>
+<iframe id="hall" src="home.html" title="夜市"></iframe>
+<audio id="hallBgm" src="bgm/me-you-128.mp3" preload="auto" loop></audio>
+<button id="hmusic" title="音乐">♪</button>
 
 <script>
 var CONFIG = {
@@ -729,7 +746,7 @@ var CONFIG = {
     if (!hold && tPhase > CONFIG.BURST - 1.7){
       document.getElementById("fade").classList.add("on");
     }
-    if (!hold && tPhase > CONFIG.BURST){ location.href = CONFIG.home; }
+    if (!hold && tPhase > CONFIG.BURST){ enterHall(); }
   }
 
   function loop(ms){
@@ -737,6 +754,7 @@ var CONFIG = {
     var dt = lastMs ? Math.min(0.05, now - lastMs) : 0.016;
     lastMs = now;
     tPhase += dt;
+    if (hallEntered) return;
     render(dt, now);
     requestAnimationFrame(loop);
   }
@@ -880,6 +898,88 @@ var CONFIG = {
     });
   }
 
+  /* ---------- 主会场：同一个页面里切过去，音乐才能自己响 ---------- */
+  var hallEntered = false, hallPlaying = false, hallRamp = null;
+
+  function hallRampTo(v, ms){
+    var a = document.getElementById("hallBgm");
+    if (!a) return;
+    if (hallRamp) clearInterval(hallRamp);
+    var from = a.volume, steps = Math.max(1, Math.round(ms / 50)), i = 0;
+    hallRamp = setInterval(function(){
+      i++;
+      try { a.volume = Math.min(1, Math.max(0, from + (v - from) * (i / steps))); } catch (e) {}
+      if (i >= steps){ clearInterval(hallRamp); hallRamp = null; try { a.volume = v; } catch (e) {} }
+    }, 50);
+  }
+
+  /* 在手势里先 play 一下再立刻暂停：Safari 要求逐个元素解锁 */
+  function armHallBgm(){
+    var a = document.getElementById("hallBgm");
+    if (!a) return;
+    try {
+      a.volume = 0;
+      var p = a.play();
+      var back = function(){ try { a.pause(); a.currentTime = 0; a.volume = 0; } catch (e) {} };
+      if (p && p.then) p.then(back).catch(function(){});
+      else back();
+    } catch (e) {}
+  }
+
+  function enterHall(){
+    if (hallEntered) return;
+    hallEntered = true;
+
+    var hall = document.getElementById("hall");
+    if (hall) hall.classList.add("on");
+
+    var fade = document.getElementById("fade");
+    if (fade) fade.classList.remove("on");
+
+    var skipEl = document.getElementById("skip");
+    if (skipEl) skipEl.style.display = "none";
+    var mus = document.getElementById("music");
+    if (mus) mus.style.display = "none";
+
+    try { document.title = "给 葛成璐 的夜市"; } catch (e) {}
+
+    var a = document.getElementById("hallBgm");
+    var btn = document.getElementById("hmusic");
+    if (a){
+      try { a.currentTime = 0; } catch (e) {}
+      try { a.volume = 0; } catch (e) {}
+      var p = a.play();
+      var ok = function(){
+        hallPlaying = true;
+        if (btn) btn.classList.add("on");
+        hallRampTo(0.4, 1800);
+      };
+      if (p && p.then) p.then(ok).catch(function(){
+        hallPlaying = false;
+        /* 万一浏览器还是拦了：按钮照样露出来，别让人以为这页没音乐 */
+        if (btn){ btn.classList.add("on"); btn.classList.add("muted"); btn.title = "点一下播放音乐"; }
+      });
+      else ok();
+    }
+  }
+
+  (function(){
+    var hb = document.getElementById("hmusic");
+    if (!hb) return;
+    hb.addEventListener("click", function(){
+      var a = document.getElementById("hallBgm");
+      if (!a) return;
+      if (hallPlaying){
+        a.pause(); hallPlaying = false; hb.classList.add("muted");
+      } else {
+        try { a.volume = 0; } catch (e) {}
+        var p = a.play();
+        var ok = function(){ hallPlaying = true; hb.classList.remove("muted"); hallRampTo(0.4, 900); };
+        if (p && p.then) p.then(ok).catch(function(){}); else ok();
+      }
+    });
+  })();
+
   /* ---------- 启动 ---------- */
   function startShow(){
     if (phase !== "gate" && phase !== "init") return;
@@ -897,7 +997,8 @@ var CONFIG = {
   }
 
   document.getElementById("skip").addEventListener("click", function(){
-    location.href = CONFIG.home;
+    armHallBgm();
+    enterHall();
   });
 
   /* ---------- 把点阵这一张存下来 ---------- */
@@ -948,7 +1049,8 @@ var CONFIG = {
 
     if (shotGo) shotGo.addEventListener("click", function(ev){
       ev.stopPropagation();
-      location.href = CONFIG.home;
+      armHallBgm();
+      enterHall();
     });
   })();
 
@@ -1007,6 +1109,8 @@ var CONFIG = {
       setTimeout(function(){ tapEl.style.display = "none"; }, 950);
       /* 必须在这个点击里立刻起播：晚几秒再播放，浏览器会当成自动播放给拦掉 */
       playBgm();
+      /* 同一个手势里顺手把主会场那首也解锁，等下切过去才会自己响 */
+      armHallBgm();
       startShow();
     });
   }
