@@ -17,16 +17,19 @@
         border-radius:999px;background:rgba(10,14,26,.5);backdrop-filter:blur(6px);z-index:6}
   .back:active{background:rgba(240,220,180,.16)}
   #pads{position:absolute;inset:0;pointer-events:none;z-index:5}
-  .pad{position:absolute;bottom:4.5%;width:clamp(46px,7.2vh,64px);height:clamp(46px,7.2vh,64px);
-       display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff6e6;
-       background:rgba(18,14,28,.46);border:1px solid rgba(255,236,200,.32);
-       border-radius:16px;backdrop-filter:blur(4px);pointer-events:auto;
+  .pad{position:absolute;bottom:5%;width:clamp(54px,8.4vh,74px);height:clamp(54px,8.4vh,74px);
+       display:flex;flex-direction:column;align-items:center;justify-content:center;
+       font-size:21px;line-height:1;color:#fff6e6;
+       background:rgba(18,14,28,.5);border:1px solid rgba(255,236,200,.34);
+       border-radius:18px;backdrop-filter:blur(4px);pointer-events:auto;
        user-select:none;-webkit-user-select:none;touch-action:none;
-       transition:transform .08s,background .12s}
-  .pad.on{background:rgba(255,206,140,.45);transform:scale(.93)}
-  .pad.l{left:4%}
-  .pad.r{left:calc(4% + clamp(46px,7.2vh,64px) + 12px)}
-  .pad.j{right:5%;width:clamp(54px,8.4vh,74px);height:clamp(54px,8.4vh,74px);border-radius:50%}
+       box-shadow:0 2px 10px rgba(0,0,0,.25);
+       transition:transform .07s,background .1s}
+  .pad i{font-style:normal;font-size:9.5px;opacity:.68;margin-top:3px;letter-spacing:.12em}
+  .pad.on{background:rgba(255,206,140,.5);transform:scale(.93)}
+  .pad.l{left:3.5%}
+  .pad.r{left:calc(3.5% + clamp(54px,8.4vh,74px) + 12px)}
+  .pad.j{right:4.5%;width:clamp(62px,9.6vh,84px);height:clamp(62px,9.6vh,84px);border-radius:50%}
 </style>
 </head>
 <body>
@@ -34,9 +37,9 @@
   <a class="back" href="home.html">← 回夜市</a>
   <canvas id="cv"></canvas>
   <div id="pads">
-    <div class="pad l" data-k="left">←</div>
-    <div class="pad r" data-k="right">→</div>
-    <div class="pad j" data-k="jump">↑</div>
+    <div class="pad l" data-k="left">←<i>走</i></div>
+    <div class="pad r" data-k="right">→<i>走</i></div>
+    <div class="pad j" data-k="jump">↑<i>跳</i></div>
   </div>
 </div>
 
@@ -91,20 +94,21 @@ playerImg.src = "img/player.png";
 
 /* ---------- 生成整条路 ---------- */
 function genWorld(){
-  var segs = [], spikes = [], gears = [], plats = [], coins = [], cps = [];
+  var segs = [], spikes = [], gears = [], plats = [], coins = [], cps = [], enemies = [];
   var x = 0, i = 0;
 
   while (x < LEN - 2600){
     var kind = i % 6;
-    var w = 760 + ((i * 37) % 3) * 130;   // 760 / 890 / 1020
+    var w = 780 + ((i * 37) % 3) * 130;   // 780 / 910 / 1040
     var b = x;
 
     if (kind === 2){
-      /* 坑：前后各留 280，中间断开 */
-      var gw = 96 + ((i * 17) % 3) * 16;  // 96 / 112 / 128
+      /* 宽坑：中间架一块木板，必须踩过去 */
+      var gw = 300 + ((i * 17) % 2) * 44;
       segs.push([b, b + 280]);
       segs.push([b + 280 + gw, b + w]);
-      coins.push({ x: b + 280 + gw * 0.5, y: FLOOR - 96 });
+      plats.push({ x: b + 280 + gw / 2 - 70, y: FLOOR - 84, w: 140, span: 0, sp: 0, ph: 0 });
+      coins.push({ x: b + 280 + gw * 0.5, y: FLOOR - 138 });
     } else {
       segs.push([b, b + w]);
     }
@@ -115,14 +119,23 @@ function genWorld(){
       coins.push({ x: b + 130 + k * 86, y: FLOOR - 48 });
     }
 
-    /* 障碍 */
-    if (kind === 1){
+    /* 障碍与怪 */
+    if (kind === 0){
+      if (i > 0){
+        enemies.push({ x: b + 520, x0: b + 320, x1: b + 720, y: FLOOR - 28, w: 28, h: 28, dir: -1, dead: 0 });
+      }
+    } else if (kind === 1){
       spikes.push({ x: b + 380, n: 2 + (i % 3) });
+      enemies.push({ x: b + 690, x0: b + 620, x1: b + 770, y: FLOOR - 28, w: 28, h: 28, dir: -1, dead: 0 });
     } else if (kind === 3){
       gears.push({ x: b + 420, y: FLOOR - 34, r: 20, span: 0, sp: 0, ph: 0 });
       if (w > 880) gears.push({ x: b + 700, y: FLOOR - 34, r: 17, span: 90, sp: 0.9, ph: i });
     } else if (kind === 4){
-      plats.push({ x: b + 350, y: FLOOR - 104, w: 100, span: 120, sp: 0.8, ph: i % 3 });
+      /* 会来回动的平台，上方那串币只有跳上去才吃得到 */
+      plats.push({ x: b + 350, y: FLOOR - 120, w: 110, span: 108, sp: 0.8, ph: i % 3 });
+      for (var c2 = 0; c2 < 4; c2++){
+        coins.push({ x: b + 360 + c2 * 32, y: FLOOR - 160 });
+      }
     } else if (kind === 5){
       spikes.push({ x: b + 320, n: 2 });
       gears.push({ x: b + 640, y: FLOOR - 34, r: 19, span: 0, sp: 0, ph: 0 });
@@ -155,7 +168,7 @@ function genWorld(){
   }
 
   return { segs: segs, spikes: spikes, gears: gears, plats: plats,
-           coins: coins, cps: cps, end: LEN };
+           coins: coins, cps: cps, enemies: enemies, end: LEN };
 }
 
 var W2 = genWorld();
@@ -163,6 +176,45 @@ var W2 = genWorld();
 /* ---------- 状态 ---------- */
 var player = { x: 70, y: FLOOR - 40, w: 28, h: 40, vy: 0, vx: 0, ground: false, runT: 0, plat: null };
 var input = { left: false, right: false };
+
+/* ---------- 音效：全部现场合成，不用音频文件 ---------- */
+var AC = null;
+function ac(){
+  if (!AC){
+    try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; }
+  }
+  if (AC && AC.state === "suspended") AC.resume();
+  return AC;
+}
+function tone(f0, f1, dur, type, vol){
+  var c = ac(); if (!c) return;
+  var o = c.createOscillator(), g = c.createGain();
+  o.type = type || "sine";
+  o.frequency.setValueAtTime(f0, c.currentTime);
+  o.frequency.exponentialRampToValueAtTime(Math.max(30, f1), c.currentTime + dur);
+  g.gain.setValueAtTime(vol || 0.05, c.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + dur);
+  o.connect(g); g.connect(c.destination);
+  o.start(); o.stop(c.currentTime + dur + 0.02);
+}
+var lastCoinSnd = 0;
+var SFX = {
+  jump: function(){ tone(420, 690, 0.12, "square", 0.03); },
+  coin: function(){
+    var t = Date.now();
+    if (t - lastCoinSnd < 55) return;
+    lastCoinSnd = t;
+    tone(1046, 1568, 0.08, "triangle", 0.045);
+  },
+  stomp: function(){ tone(250, 90, 0.14, "sawtooth", 0.05); },
+  die: function(){ tone(330, 70, 0.45, "sawtooth", 0.055); },
+  check: function(){ tone(660, 990, 0.22, "triangle", 0.05); },
+  win: function(){
+    [523.25, 659.25, 783.99, 1046.5].forEach(function(f, k){
+      setTimeout(function(){ tone(f, f * 1.01, 0.34, "triangle", 0.05); }, k * 150);
+    });
+  }
+};
 var camX = 0, coinsGot = 0, state = "play", deadT = 0, holdT = 0;
 var holding = false, hintT = 1.8, tAll = 0, shake = 0;
 var startX = 70, cpReached = 0, winT = 0, doorOpen = 0;
@@ -175,7 +227,11 @@ function reset(fromCp){
   camX = player.x - W * 0.36;
   if (!fromCp) { coinsGot = 0; cpReached = 0; startX = 70; }
   state = "play"; deadT = 0; winT = 0; doorOpen = 0; shake = 0;
-  hintT = fromCp ? 0 : 1.8;
+  for (var ei = 0; ei < W2.enemies.length; ei++){
+    var en0 = W2.enemies[ei];
+    en0.dead = false; en0.x = en0.x0; en0.dir = -1;
+  }
+  hintT = fromCp ? 0 : 4;
 }
 reset();
 
@@ -188,6 +244,7 @@ function jump(){
     player.ground = false; player.plat = null;
     hintT = 0; holdT = 0;
     holding = true;
+    SFX.jump();
   }
 }
 
@@ -260,7 +317,7 @@ function platRect(p, t){ return { x: p.x + Math.sin(t * p.sp + p.ph) * p.span, y
 function gearPos(g, t){ return { x: g.x + Math.sin(t * g.sp + g.ph) * g.span, y: g.y, r: g.r }; }
 
 /* ---------- 更新 ---------- */
-function die(){ state = "dead"; deadT = 0; shake = 1; }
+function die(){ state = "dead"; deadT = 0; shake = 1; SFX.die(); }
 
 function update(dt){
   tAll += dt;
@@ -325,7 +382,7 @@ function update(dt){
     if (coin.got) continue;
     if (coin.x < camX - 60 || coin.x > camX + W + 60) continue;
     if (overlap(player.x, player.y, player.w, player.h, coin.x - 12, coin.y - 12, 24, 24)){
-      coin.got = true; coinsGot++;
+      coin.got = true; coinsGot++; SFX.coin();
     }
   }
 
@@ -347,16 +404,37 @@ function update(dt){
     if (dx * dx + dy * dy < rr * rr) return die();
   }
 
+  /* 蘑菇怪 */
+  for (var en2 = 0; en2 < W2.enemies.length; en2++){
+    var en = W2.enemies[en2];
+    if (en.dead) continue;
+    if (en.x < camX - 320 || en.x > camX + W + 320) continue;
+    en.x += en.dir * 58 * dt;
+    if (en.x < en.x0){ en.x = en.x0; en.dir = 1; }
+    if (en.x > en.x1){ en.x = en.x1; en.dir = -1; }
+    if (overlap(player.x + 4, player.y + 8, player.w - 8, player.h - 8, en.x, en.y, en.w, en.h)){
+      if (player.vy > 60 && prevBottom <= en.y + 14){
+        en.dead = true;
+        player.vy = -520;
+        coinsGot++;
+        SFX.stomp();
+      } else {
+        return die();
+      }
+    }
+  }
+
   /* 检查点 */
   if (cpReached < W2.cps.length && player.x >= W2.cps[cpReached]){
     cpReached++;
     startX = W2.cps[cpReached - 1];
+    SFX.check();
   }
 
   if (player.y > CONFIG.fallDeath) return die();
 
   /* 到城堡 */
-  if (player.x + player.w > W2.end - 52 && state === "play"){ state = "win"; winT = 0; doorOpen = 0; }
+  if (player.x + player.w > W2.end - 52 && state === "play"){ state = "win"; winT = 0; doorOpen = 0; SFX.win(); }
 }
 
 /* ---------- 画面 ---------- */
@@ -387,6 +465,13 @@ function bg(){
 }
 
 function drawFloor(){
+  /* 地平线以下先刷成深渊，没铺地面的地方就是掉下去的坑 */
+  var dg = ctx.createLinearGradient(0, FLOOR, 0, H);
+  dg.addColorStop(0, "#2c1c18");
+  dg.addColorStop(1, "#120a0c");
+  ctx.fillStyle = dg;
+  ctx.fillRect(0, FLOOR, W, H - FLOOR);
+
   for (var i = 0; i < W2.segs.length; i++){
     var s = W2.segs[i];
     var x0 = s[0] - camX, x1 = s[1] - camX;
@@ -475,6 +560,48 @@ function drawPlats(){
     ctx.fillRect(x, pr.y, pr.w, 6);
     ctx.fillStyle = "rgba(0,0,0,.18)";
     for (var b = x + 12; b < x + pr.w - 6; b += 20) ctx.fillRect(b, pr.y + 8, 2, 7);
+  }
+}
+
+function drawEnemies(){
+  for (var i = 0; i < W2.enemies.length; i++){
+    var en = W2.enemies[i];
+    var x = en.x - camX;
+    if (x < -90 || x > W + 90) continue;
+    var y = en.y;
+    ctx.save();
+    ctx.translate(x + en.w / 2, FLOOR);
+    ctx.scale(1.18, 1.18);
+    ctx.translate(-(x + en.w / 2), -FLOOR);
+    if (en.dead){
+      ctx.fillStyle = "#8a5334";
+      ctx.beginPath();
+      ctx.ellipse(x + en.w / 2, FLOOR - 5, en.w / 2 + 3, 6, 0, 0, 7);
+      ctx.fill();
+      ctx.restore();
+      continue;
+    }
+    /* 腿 */
+    ctx.fillStyle = "#6f4327";
+    ctx.fillRect(x + 6, y + 22, 6, 7);
+    ctx.fillRect(x + 16, y + 22, 6, 7);
+    /* 伞盖 */
+    ctx.fillStyle = "#c8574b";
+    ctx.beginPath();
+    ctx.moveTo(x - 1, y + 22);
+    ctx.quadraticCurveTo(x + 14, y - 5, x + 29, y + 22);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#9c3f37"; ctx.lineWidth = 1.4; ctx.stroke();
+    /* 白点 */
+    ctx.fillStyle = "#fff1de";
+    ctx.beginPath(); ctx.arc(x + 9, y + 12, 3.4, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 20, y + 14, 2.8, 0, 7); ctx.fill();
+    /* 眼睛 */
+    ctx.fillStyle = "#241a1a";
+    ctx.beginPath(); ctx.arc(x + 9, y + 21, 1.9, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 18, y + 21, 1.9, 0, 7); ctx.fill();
+    ctx.restore();
   }
 }
 
@@ -747,6 +874,7 @@ function render(){
   drawCheckpoints();
   drawPlats();
   drawGears();
+  drawEnemies();
   drawSpikes();
   drawFloor();
   drawPlayer();
