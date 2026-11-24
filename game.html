@@ -16,12 +16,28 @@
         text-decoration:none;padding:8px 15px;border:1px solid rgba(240,220,180,.28);
         border-radius:999px;background:rgba(10,14,26,.5);backdrop-filter:blur(6px);z-index:6}
   .back:active{background:rgba(240,220,180,.16)}
+  #pads{position:absolute;inset:0;pointer-events:none;z-index:5}
+  .pad{position:absolute;bottom:4.5%;width:clamp(46px,7.2vh,64px);height:clamp(46px,7.2vh,64px);
+       display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff6e6;
+       background:rgba(18,14,28,.46);border:1px solid rgba(255,236,200,.32);
+       border-radius:16px;backdrop-filter:blur(4px);pointer-events:auto;
+       user-select:none;-webkit-user-select:none;touch-action:none;
+       transition:transform .08s,background .12s}
+  .pad.on{background:rgba(255,206,140,.45);transform:scale(.93)}
+  .pad.l{left:4%}
+  .pad.r{left:calc(4% + clamp(46px,7.2vh,64px) + 12px)}
+  .pad.j{right:5%;width:clamp(54px,8.4vh,74px);height:clamp(54px,8.4vh,74px);border-radius:50%}
 </style>
 </head>
 <body>
 <div id="box">
   <a class="back" href="home.html">← 回夜市</a>
   <canvas id="cv"></canvas>
+  <div id="pads">
+    <div class="pad l" data-k="left">←</div>
+    <div class="pad r" data-k="right">→</div>
+    <div class="pad j" data-k="jump">↑</div>
+  </div>
 </div>
 
 <script>
@@ -36,12 +52,13 @@ var CONFIG = {
   gravity: 2400,     // 重力，越大掉得越快、跳得越低
   jump: -780,        // 起跳力度，越负跳得越高
   jumpCut: -260,
-  run: 300,          // 自动向前跑的速度（px/秒）
+  walk: 300,         // 按住方向键走的速度（px/秒）
+  clampL: 40,        // 最左边能退到哪
   fallDeath: 640
 };
 
 var LEVEL = {
-  len: 54000,        // 整条路多长：54000 ÷ 300 = 180 秒，约 3 分钟
+  len: 36000,        // 整条路多长：36000 ÷ 300 = 120 秒，加上跳障碍约 3 分钟
   cpCount: 3,        // 中途检查点数量（摔死了从这里重来）
   castle: "奖 励",   // 城堡门口显示的字
   rewardTitle: "奖 励",
@@ -144,7 +161,8 @@ function genWorld(){
 var W2 = genWorld();
 
 /* ---------- 状态 ---------- */
-var player = { x: 70, y: FLOOR - 40, w: 28, h: 40, vy: 0, ground: false, runT: 0, plat: null };
+var player = { x: 70, y: FLOOR - 40, w: 28, h: 40, vy: 0, vx: 0, ground: false, runT: 0, plat: null };
+var input = { left: false, right: false };
 var camX = 0, coinsGot = 0, state = "play", deadT = 0, holdT = 0;
 var holding = false, hintT = 1.8, tAll = 0, shake = 0;
 var startX = 70, cpReached = 0, winT = 0, doorOpen = 0;
@@ -152,8 +170,9 @@ var startX = 70, cpReached = 0, winT = 0, doorOpen = 0;
 function reset(fromCp){
   player.x = fromCp ? startX : 70;
   player.y = FLOOR - player.h;
-  player.vy = 0; player.ground = false; player.plat = null;
-  camX = player.x - W * 0.32;
+  player.vy = 0; player.vx = 0; player.ground = false; player.plat = null;
+  input.left = false; input.right = false; holding = false;
+  camX = player.x - W * 0.36;
   if (!fromCp) { coinsGot = 0; cpReached = 0; startX = 70; }
   state = "play"; deadT = 0; winT = 0; doorOpen = 0; shake = 0;
   hintT = fromCp ? 0 : 1.8;
@@ -161,32 +180,69 @@ function reset(fromCp){
 reset();
 
 /* ---------- 输入 ---------- */
-function press(){
+function jump(){
   if (state === "dead"){ if (deadT > 0.55) reset(cpReached > 0); return; }
-  if (state === "win"){ if (winT > 1.5) { reset(false); } return; }
+  if (state === "win"){ if (winT > 1.5) reset(false); return; }
   if (player.ground || player.plat){
     player.vy = CONFIG.jump;
     player.ground = false; player.plat = null;
     hintT = 0; holdT = 0;
+    holding = true;
   }
 }
-window.addEventListener("keydown", function(e){
-  if (e.code === "Space" || e.code === "ArrowUp" || e.key === " "){
-    e.preventDefault();
-    if (!holding){ holding = true; press(); }
+
+function setKey(k, on){
+  if (k === "jump"){
+    if (on) jump(); else holding = false;
+  } else if (k === "left" || k === "right"){
+    input[k] = on;
   }
+}
+
+var KEYMAP = {
+  ArrowLeft: "left", KeyA: "left",
+  ArrowRight: "right", KeyD: "right",
+  Space: "jump", ArrowUp: "jump", KeyW: "jump"
+};
+
+window.addEventListener("keydown", function(e){
+  var k = KEYMAP[e.code];
+  if (!k) return;
+  e.preventDefault();
+  if (e.repeat) return;
+  setKey(k, true);
 });
 window.addEventListener("keyup", function(e){
-  if (e.code === "Space" || e.code === "ArrowUp" || e.key === " ") holding = false;
-});
-function pointer(e){
+  var k = KEYMAP[e.code];
+  if (!k) return;
   e.preventDefault();
-  if (state === "play"){ if (!holding){ holding = true; press(); } }
-  else press();
-  setTimeout(function(){ holding = false; }, 90);
-}
-cv.addEventListener("touchstart", pointer, { passive: false });
-cv.addEventListener("mousedown", pointer);
+  setKey(k, false);
+});
+
+/* 屏幕上的三个按键 */
+Array.prototype.forEach.call(document.querySelectorAll(".pad"), function(el){
+  var k = el.getAttribute("data-k");
+  function down(e){
+    e.preventDefault();
+    el.classList.add("on");
+    setKey(k, true);
+  }
+  function up(e){
+    e.preventDefault();
+    el.classList.remove("on");
+    setKey(k, false);
+  }
+  el.addEventListener("touchstart", down, { passive: false });
+  el.addEventListener("touchend", up, { passive: false });
+  el.addEventListener("touchcancel", up, { passive: false });
+  el.addEventListener("mousedown", down);
+  el.addEventListener("mouseup", up);
+  el.addEventListener("mouseleave", up);
+});
+
+/* 点画面也能跳（手指不落在按键上时） */
+cv.addEventListener("touchstart", function(e){ e.preventDefault(); jump(); }, { passive: false });
+cv.addEventListener("mousedown", function(e){ e.preventDefault(); jump(); });
 
 /* ---------- 碰撞小工具 ---------- */
 function segAt(x){
@@ -215,13 +271,20 @@ function update(dt){
     winT += dt;
     doorOpen = Math.min(1, doorOpen + dt * 1.3);
     if (player.x < W2.end - 10) player.x += 70 * dt;
-    camX = player.x - W * 0.32;
+    var cw = player.x - W * 0.36;
+    if (cw > W2.end + 170 - W) cw = W2.end + 170 - W;
+    camX += (cw - camX) * Math.min(1, dt * 9);
     return;
   }
   if (hintT > 0) hintT -= dt;
 
-  player.runT += dt;
-  player.x += CONFIG.run * dt;
+  var vx = 0;
+  if (input.right) vx += CONFIG.walk;
+  if (input.left) vx -= CONFIG.walk;
+  player.vx = vx;
+  player.x += vx * dt;
+  if (player.x < CONFIG.clampL) player.x = CONFIG.clampL;
+  if (vx !== 0) player.runT += dt;
 
   /* 按住跳得更高 */
   if (holding && !player.ground && !player.plat && player.vy < 0){
@@ -251,7 +314,10 @@ function update(dt){
     player.y = FLOOR - player.h; player.vy = 0; player.ground = true; player.plat = null;
   }
 
-  camX = player.x - W * 0.32;
+  var camTarget = player.x - W * 0.36;
+  if (camTarget < 0) camTarget = 0;
+  if (camTarget > W2.end + 170 - W) camTarget = W2.end + 170 - W;
+  camX += (camTarget - camX) * Math.min(1, dt * 9);
 
   /* 金币 */
   for (var c = 0; c < W2.coins.length; c++){
@@ -548,7 +614,7 @@ function drawPlayer(){
     ctx.drawImage(playerImg, x - 2, y - 4, player.w + 4, player.h + 4);
     return;
   }
-  var swing = Math.sin(player.runT * 16) * 4;
+  var swing = player.vx ? Math.sin(player.runT * 16) * 4 : 0;
   ctx.fillStyle = "#e8829e";
   ctx.fillRect(x + 6, y + 30, 6, 10 + swing * 0.4);
   ctx.fillRect(x + 16, y + 30, 6, 10 - swing * 0.4);
@@ -598,9 +664,9 @@ function drawHUD(){
     ctx.font = "16px -apple-system,'PingFang SC',sans-serif";
     ctx.textAlign = "center";
     ctx.fillStyle = "rgba(40,44,60,.7)";
-    ctx.fillRect(W / 2 - 128, H - 76, 256, 34);
+    ctx.fillRect(W / 2 - 150, H * 0.28, 300, 34);
     ctx.fillStyle = "#fff";
-    ctx.fillText("点 一 下 屏 幕 跳 起 来", W / 2, H - 66);
+    ctx.fillText("←  →  走        ↑  跳", W / 2, H * 0.28 + 10);
     ctx.globalAlpha = 1;
   }
 
