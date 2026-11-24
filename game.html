@@ -94,7 +94,7 @@ playerImg.src = "img/player.png";
 
 /* ---------- 生成整条路 ---------- */
 function genWorld(){
-  var segs = [], spikes = [], gears = [], plats = [], coins = [], cps = [], enemies = [];
+  var segs = [], spikes = [], gears = [], plats = [], coins = [], cps = [], enemies = [], items = [];
   var x = 0, i = 0;
 
   while (x < LEN - 2600){
@@ -113,10 +113,20 @@ function genWorld(){
       segs.push([b, b + w]);
     }
 
-    /* 金币 */
+    /* 金币：排成一道拱，跳起来才吃得到中间那几枚 */
     var n = 4 + (i % 3);
     for (var k = 0; k < n; k++){
-      coins.push({ x: b + 130 + k * 86, y: FLOOR - 48 });
+      var tt = n > 1 ? k / (n - 1) : 0.5;
+      coins.push({ x: b + 130 + k * 86, y: FLOOR - 48 - Math.sin(tt * Math.PI) * 46 });
+    }
+
+    /* 道具 */
+    if (kind === 4){
+      items.push({ type: "spring", x: b + 650, y: FLOOR - 26, w: 36, h: 26, got: false, anim: 0 });
+    }
+    if (kind !== 2){
+      if (i % 8 === 5) items.push({ type: "life", x: b + 610, y: FLOOR - 58, w: 26, h: 26, got: false, anim: 0 });
+      if (i % 11 === 6) items.push({ type: "star", x: b + 690, y: FLOOR - 66, w: 26, h: 26, got: false, anim: 0 });
     }
 
     /* 障碍与怪 */
@@ -168,7 +178,7 @@ function genWorld(){
   }
 
   return { segs: segs, spikes: spikes, gears: gears, plats: plats,
-           coins: coins, cps: cps, enemies: enemies, end: LEN };
+           coins: coins, cps: cps, enemies: enemies, items: items, end: LEN };
 }
 
 var W2 = genWorld();
@@ -209,6 +219,12 @@ var SFX = {
   stomp: function(){ tone(250, 90, 0.14, "sawtooth", 0.05); },
   die: function(){ tone(330, 70, 0.45, "sawtooth", 0.055); },
   check: function(){ tone(660, 990, 0.22, "triangle", 0.05); },
+  spring: function(){ tone(300, 1150, 0.2, "sine", 0.05); },
+  life: function(){
+    tone(660, 990, 0.13, "triangle", 0.05);
+    setTimeout(function(){ tone(990, 1320, 0.16, "triangle", 0.05); }, 125);
+  },
+  star: function(){ tone(880, 1760, 0.28, "triangle", 0.05); },
   win: function(){
     [523.25, 659.25, 783.99, 1046.5].forEach(function(f, k){
       setTimeout(function(){ tone(f, f * 1.01, 0.34, "triangle", 0.05); }, k * 150);
@@ -216,6 +232,7 @@ var SFX = {
   }
 };
 var camX = 0, coinsGot = 0, state = "play", deadT = 0, holdT = 0;
+var lives = 3, invT = 0, deathX = 0;
 var holding = false, hintT = 1.8, tAll = 0, shake = 0;
 var startX = 70, cpReached = 0, winT = 0, doorOpen = 0;
 
@@ -225,19 +242,27 @@ function reset(fromCp){
   player.vy = 0; player.vx = 0; player.ground = false; player.plat = null;
   input.left = false; input.right = false; holding = false;
   camX = player.x - W * 0.36;
-  if (!fromCp) { coinsGot = 0; cpReached = 0; startX = 70; }
+  if (!fromCp) { coinsGot = 0; cpReached = 0; startX = CONFIG.clampL; lives = 3; }
+  invT = 0;
   state = "play"; deadT = 0; winT = 0; doorOpen = 0; shake = 0;
   for (var ei = 0; ei < W2.enemies.length; ei++){
     var en0 = W2.enemies[ei];
     en0.dead = false; en0.x = en0.x0; en0.dir = -1;
   }
+  for (var ii = 0; ii < W2.items.length; ii++){ W2.items[ii].got = false; W2.items[ii].anim = 0; }
   hintT = fromCp ? 0 : 4;
 }
 reset();
 
 /* ---------- 输入 ---------- */
 function jump(){
-  if (state === "dead"){ if (deadT > 0.55) reset(cpReached > 0); return; }
+  if (state === "dead"){
+    if (deadT > 0.75){
+      if (lives > 0) reviveAt(respawnX(deathX));
+      else { lives = 3; reviveAt(startX); }
+    }
+    return;
+  }
   if (state === "win"){ if (winT > 1.5) reset(false); return; }
   if (player.ground || player.plat){
     player.vy = CONFIG.jump;
@@ -317,7 +342,34 @@ function platRect(p, t){ return { x: p.x + Math.sin(t * p.sp + p.ph) * p.span, y
 function gearPos(g, t){ return { x: g.x + Math.sin(t * g.sp + g.ph) * g.span, y: g.y, r: g.r }; }
 
 /* ---------- 更新 ---------- */
-function die(){ state = "dead"; deadT = 0; shake = 1; SFX.die(); }
+function die(){
+  if (invT > 0) return;
+  deathX = player.x;
+  lives--;
+  state = "dead"; deadT = 0; shake = 1;
+  SFX.die();
+}
+
+/* 死后从哪儿爬起来：往回找最近的一块实地 */
+function respawnX(fromX){
+  var px = fromX;
+  for (var k = 0; k < 48; k++){
+    if (segAt(px) && segAt(px + player.w)) return px;
+    px -= 14;
+    if (px <= CONFIG.clampL) break;
+  }
+  return startX;
+}
+
+function reviveAt(px){
+  player.x = px;
+  player.y = FLOOR - player.h;
+  player.vy = 0; player.vx = 0;
+  player.ground = false; player.plat = null;
+  camX = Math.max(0, px - W * 0.36);
+  state = "play"; deadT = 0; shake = 0; invT = 1.0;
+  input.left = false; input.right = false; holding = false;
+}
 
 function update(dt){
   tAll += dt;
@@ -334,6 +386,7 @@ function update(dt){
     return;
   }
   if (hintT > 0) hintT -= dt;
+  if (invT > 0) invT = Math.max(0, invT - dt);
 
   var vx = 0;
   if (input.right) vx += CONFIG.walk;
@@ -413,7 +466,11 @@ function update(dt){
     if (en.x < en.x0){ en.x = en.x0; en.dir = 1; }
     if (en.x > en.x1){ en.x = en.x1; en.dir = -1; }
     if (overlap(player.x + 4, player.y + 8, player.w - 8, player.h - 8, en.x, en.y, en.w, en.h)){
-      if (player.vy > 60 && prevBottom <= en.y + 14){
+      if (invT > 0){
+        en.dead = true;
+        coinsGot++;
+        SFX.stomp();
+      } else if (player.vy > 60 && prevBottom <= en.y + 14){
         en.dead = true;
         player.vy = -520;
         coinsGot++;
@@ -421,6 +478,31 @@ function update(dt){
       } else {
         return die();
       }
+    }
+  }
+
+  /* 道具：弹簧 / 加命蘑菇 / 无敌星星 */
+  for (var it2 = 0; it2 < W2.items.length; it2++){
+    var item = W2.items[it2];
+    if (item.x < camX - 140 || item.x > camX + W + 140) continue;
+    if (item.type === "spring"){
+      if (item.anim > 0) item.anim = Math.max(0, item.anim - dt);
+      if (player.vy >= 0 &&
+          overlap(player.x + 4, player.y + player.h - 6, player.w - 8, 10,
+                  item.x, item.y, item.w, item.h)){
+        player.y = item.y - player.h;
+        player.vy = -1150;
+        player.ground = false; player.plat = null;
+        item.anim = 0.26;
+        SFX.spring();
+      }
+      continue;
+    }
+    if (item.got) continue;
+    if (overlap(player.x, player.y, player.w, player.h, item.x - 13, item.y - 13, 26, 26)){
+      item.got = true;
+      if (item.type === "life"){ lives = Math.min(5, lives + 1); SFX.life(); }
+      else { invT = 8; SFX.star(); }
     }
   }
 
@@ -560,6 +642,79 @@ function drawPlats(){
     ctx.fillRect(x, pr.y, pr.w, 6);
     ctx.fillStyle = "rgba(0,0,0,.18)";
     for (var b = x + 12; b < x + pr.w - 6; b += 20) ctx.fillRect(b, pr.y + 8, 2, 7);
+  }
+}
+
+function drawItems(){
+  for (var i = 0; i < W2.items.length; i++){
+    var it = W2.items[i];
+    var x = it.x - camX;
+    if (x < -90 || x > W + 90) continue;
+
+    if (it.type === "spring"){
+      var comp = it.anim > 0 ? it.anim / 0.26 : 0;
+      var top = it.y + comp * 11;
+      /* 底座 */
+      ctx.fillStyle = "#6f7488";
+      ctx.fillRect(x - 1, FLOOR - 6, it.w + 2, 6);
+      ctx.fillStyle = "rgba(0,0,0,.18)";
+      ctx.fillRect(x - 1, FLOOR - 2, it.w + 2, 2);
+      /* 弹簧圈 */
+      ctx.strokeStyle = "#d3d8e6"; ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      for (var q = 0; q < 3; q++){
+        var yb = top + 9, ye = FLOOR - 7;
+        var yy = yb + q * ((ye - yb) / 3);
+        ctx.moveTo(x + 5, yy);
+        ctx.lineTo(x + it.w - 5, yy + 3.5);
+      }
+      ctx.stroke();
+      /* 顶板 */
+      ctx.fillStyle = "#e0574a";
+      ctx.fillRect(x - 3, top, it.w + 6, 8);
+      ctx.fillStyle = "rgba(255,255,255,.42)";
+      ctx.fillRect(x - 3, top + 1, it.w + 6, 2.5);
+      continue;
+    }
+
+    if (it.got) continue;
+
+    if (it.type === "life"){
+      var by = it.y - 13 + Math.sin(tAll * 2.2 + i) * 2;
+      ctx.fillStyle = "#6b4a2e";
+      ctx.fillRect(x + 2, by + 16, 6, 10);
+      ctx.fillRect(x + 18, by + 16, 6, 10);
+      ctx.fillStyle = "#5fbf6a";
+      ctx.beginPath();
+      ctx.moveTo(x - 3, by + 18);
+      ctx.quadraticCurveTo(x + 13, by - 9, x + 29, by + 18);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = "#3f9a4d"; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.fillStyle = "#f4fff2";
+      ctx.beginPath(); ctx.arc(x + 9, by + 8, 3.2, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 20, by + 10, 2.6, 0, 7); ctx.fill();
+      continue;
+    }
+
+    /* 星星 */
+    var sy = it.y - 13 + Math.sin(tAll * 3 + i) * 3;
+    ctx.save();
+    ctx.translate(x, sy);
+    ctx.rotate(tAll * 1.5);
+    ctx.beginPath();
+    for (var q2 = 0; q2 < 10; q2++){
+      var rr = q2 % 2 === 0 ? 13 : 5.6;
+      var aa = -Math.PI / 2 + q2 * Math.PI / 5;
+      if (q2 === 0) ctx.moveTo(Math.cos(aa) * rr, Math.sin(aa) * rr);
+      else ctx.lineTo(Math.cos(aa) * rr, Math.sin(aa) * rr);
+    }
+    ctx.closePath();
+    var sg = ctx.createRadialGradient(0, 0, 2, 0, 0, 16);
+    sg.addColorStop(0, "#fffbe0");
+    sg.addColorStop(1, "#ffd23d");
+    ctx.fillStyle = sg; ctx.fill();
+    ctx.strokeStyle = "#e8a91b"; ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.restore();
   }
 }
 
@@ -737,8 +892,18 @@ function drawCastle(){
 function drawPlayer(){
   var x = player.x - camX, y = player.y;
   if (state === "dead" && Math.floor(deadT * 12) % 2 === 0) return;
+  if (invT > 1){
+    var gg = ctx.createRadialGradient(x + 14, y + 20, 4, x + 14, y + 20, 32);
+    gg.addColorStop(0, "rgba(255,226,130,.55)");
+    gg.addColorStop(1, "rgba(255,226,130,0)");
+    ctx.fillStyle = gg;
+    ctx.beginPath(); ctx.arc(x + 14, y + 20, 32, 0, 7); ctx.fill();
+  }
+  var flash = invT > 0 && Math.floor(tAll * 14) % 2 === 0;
+  if (flash) ctx.globalAlpha = 0.6;
   if (hasPlayerImg){
     ctx.drawImage(playerImg, x - 2, y - 4, player.w + 4, player.h + 4);
+    ctx.globalAlpha = 1;
     return;
   }
   var swing = player.vx ? Math.sin(player.runT * 16) * 4 : 0;
@@ -762,16 +927,28 @@ function drawPlayer(){
   ctx.fillStyle = "rgba(255,150,180,.7)";
   ctx.beginPath(); ctx.arc(x + 6, y + 18, 2.6, 0, 7); ctx.fill();
   ctx.beginPath(); ctx.arc(x + 22, y + 18, 2.6, 0, 7); ctx.fill();
+  ctx.globalAlpha = 1;
 }
 
 function drawHUD(){
-  /* 金币 */
+  /* 金币 + 命 */
   ctx.fillStyle = "rgba(20,26,40,.55)";
-  ctx.fillRect(14, 14, 178, 34);
+  ctx.fillRect(14, 14, 200, 62);
   ctx.font = "bold 20px Menlo,Consolas,monospace";
   ctx.textBaseline = "top"; ctx.textAlign = "left";
   ctx.fillStyle = "#fff";
   ctx.fillText("YOU GOT: " + coinsGot, 24, 21);
+  ctx.font = "17px -apple-system,'PingFang SC',sans-serif";
+  var heartN = Math.max(3, lives);
+  for (var hi = 0; hi < heartN; hi++){
+    ctx.fillStyle = hi < lives ? "#ff9db4" : "rgba(255,255,255,.2)";
+    ctx.fillText("♥", 26 + hi * 21, 45);
+  }
+  if (invT > 1){
+    ctx.font = "12px -apple-system,'PingFang SC',sans-serif";
+    ctx.fillStyle = "#ffe08a";
+    ctx.fillText("★ " + Math.ceil(invT) + "s", 104 + heartN * 21, 48);
+  }
 
   /* 进度 */
   var pct = Math.max(0, Math.min(1, player.x / W2.end));
@@ -803,11 +980,11 @@ function drawHUD(){
     ctx.textAlign = "center";
     ctx.fillStyle = "#fff";
     ctx.font = "bold 30px -apple-system,'PingFang SC',sans-serif";
-    ctx.fillText("再 来 一 次", W / 2, H / 2 - 20);
+    ctx.fillText("倒 下 了", W / 2, H / 2 - 20);
     ctx.font = "15px -apple-system,'PingFang SC',sans-serif";
     ctx.fillStyle = "rgba(255,255,255,.85)";
-    ctx.fillText(cpReached > 0 ? "从第 " + cpReached + " 个旗子那儿重来" : "这一次拿到了 " + coinsGot + " 枚", W / 2, H / 2 + 20);
-    if (deadT > 0.55) ctx.fillText("点 一 下 继 续", W / 2, H / 2 + 52);
+    ctx.fillText(lives > 0 ? "还 剩 " + lives + " 条 命" : "命 用 完 了 · 回 到 上 一 面 旗 子", W / 2, H / 2 + 20);
+    if (deadT > 0.75) ctx.fillText("点 一 下 继 续", W / 2, H / 2 + 52);
   }
 }
 
@@ -828,7 +1005,7 @@ function drawWin(){
 
   ctx.fillStyle = "#9a7a58";
   ctx.font = "16px -apple-system,'PingFang SC',sans-serif";
-  ctx.fillText("一路收下 " + coinsGot + " 枚星星", W / 2, H / 2 - 8);
+  ctx.fillText("一路收下 " + coinsGot + " / " + W2.coins.length + " 颗星", W / 2, H / 2 - 8);
 
   /* 奖励卡 */
   var cw = 340, ch = 120, cx = W / 2 - cw / 2, cy = H / 2 + 24;
@@ -874,6 +1051,7 @@ function render(){
   drawCheckpoints();
   drawPlats();
   drawGears();
+  drawItems();
   drawEnemies();
   drawSpikes();
   drawFloor();
