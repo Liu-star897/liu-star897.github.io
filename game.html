@@ -56,6 +56,7 @@ var CONFIG = {
   jumpCut: -260,
   walk: 300,         // 按住方向键走的速度（px/秒）
   clampL: 40,        // 最左边能退到哪
+  springLow: -810,    // 矮弹簧的弹力（平地矮弹簧，用来上天空浮岛）
   fallDeath: 720,
   startLives: 1      // 初始几条命（有检查点和加血，所以从一条开始）
 };
@@ -94,10 +95,10 @@ playerImg.src = "img/player.png";
 
 /* ---------- 生成整条路：由一块块有高差的地形拼起来 ---------- */
 function genWorld(){
-  var O = { segs: [], spikes: [], gears: [], plats: [], coins: [], cps: [], enemies: [], items: [], end: LEN, endY: FLOOR };
+  var O = { segs: [], spikes: [], gears: [], plats: [], coins: [], cps: [], enemies: [], items: [], seas: [], end: LEN, endY: FLOOR };
   var x = 0, y = FLOOR, i = 1;
   var lastT = -1;
-  var POOL = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 10, 12];
+  var POOL = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 12, 13, 12, 14, 12];
 
   function clampY(v){ return Math.max(FLOOR - 132, Math.min(FLOOR + 58, v)); }
 
@@ -220,20 +221,21 @@ function genWorld(){
       arc(x + 300, 3, 80, yd);
       y = ye;
 
-    } else if (t === 10){
-      /* 天空浮岛：一段深坑，上空悬着三块云台，要一路跳过去 */
-      w = 1020;
-      sg(x, x + 270, y);
-      sg(x + 800, x + w, y);
-      var cxs = [x + 330, x + 520, x + 700];
-      for (var cc = 0; cc < 3; cc++){
-        var py = y - (cc === 1 ? 118 : 74);
-        O.plats.push({ x: cxs[cc], y: py, w: 156, span: 0, sp: 0, ph: 0, kind: "cloud" });
+    } else if (t === 12){
+      /* 天空浮岛：一段深坑，上空悬着一排云台，前面放一个矮弹簧帮你上去 */
+      w = 1180;
+      sg(x, x + 280, y);
+      sg(x + 900, x + w, y);
+      O.items.push({ type: "spring", x: x + 190, y: y - 34, w: 40, h: 34, got: false, anim: 0, low: true });
+      var cxs = [x + 380, x + 560, x + 740, x + 870];
+      for (var cc = 0; cc < 4; cc++){
+        var py = y - (cc === 1 ? 118 : (cc === 2 ? 100 : 74));
+        O.plats.push({ x: cxs[cc], y: py, w: 150, span: 0, sp: 0, ph: 0, kind: "cloud" });
         cn(cxs[cc] + 34, py - 46);
-        cn(cxs[cc] + 120, py - 46);
+        cn(cxs[cc] + 116, py - 46);
       }
-      cn(x + 190, y - 48);
-      cn(x + 860, y - 48);
+      cn(x + 150, y - 48);
+      cn(x + 1000, y - 48);
 
     } else if (t === 11){
       /* 陷阱密集带：刺和齿轮交替，要跳着过 */
@@ -243,9 +245,34 @@ function genWorld(){
       O.gears.push({ x: x + 450, y: y - 34, r: 19, span: 0, sp: 0, ph: i });
       O.spikes.push({ x: x + 610, n: 4 });
       O.gears.push({ x: x + 790, y: y - 30, r: 16, span: 70, sp: 1.1, ph: i });
-      arc(x + 60, 3, 78, y);
-      cn(x + 540, y - 84);
-      cn(x + 760, y - 112);
+      cn(x + 330, y - 46);
+      cn(x + 690, y - 46);
+
+    } else if (t === 13){
+      /* 海洋：一段比陆地低的海面，海里有四块可以踩的石块 */
+      w = 1060;
+      sg(x, x + 240, y);
+      sg(x + 820, x + w, y);
+      var wy = FLOOR + 40;
+      O.seas.push({ x0: x + 240, x1: x + 820, wy: wy });
+      var rocks = [x + 350, x + 500, x + 650, x + 780];
+      for (var rk = 0; rk < 4; rk++){
+        O.plats.push({ x: rocks[rk], y: wy - 26, w: 88, span: 0, sp: 0, ph: 0, kind: "rock" });
+        cn(rocks[rk] + 44, wy - 88);
+      }
+
+    } else if (t === 14){
+      /* 缓坡台阶：一串小台阶一路抬高，尽头吊着高币 */
+      w = 960;
+      var yt = y;
+      sg(x, x + 200, yt);
+      for (var st = 0; st < 5; st++){
+        sg(x + 200 + st * 150, x + 350 + st * 150, clampY(yt - 26 * (st + 1)));
+      }
+      sg(x + 950, x + w, clampY(yt - 130));
+      y = clampY(yt - 130);
+      cn(x + 790, y - 150);
+      cn(x + 850, y - 150);
 
     } else {
       /* 平地带刺 + 怪，两者错开 */
@@ -348,6 +375,7 @@ var camX = 0, coinsGot = 0, state = "play", deadT = 0, holdT = 0;
 var lives = CONFIG.startLives, invT = 0, deathX = 0;
 var holding = false, hintT = 4, tAll = 0, shake = 0;
 var startX = 70, cpReached = 0, winT = 0, doorOpen = 0;
+var deathsSinceCp = 0;
 
 function groundYAt(x){
   for (var i = 0; i < W2.segs.length; i++){
@@ -365,7 +393,7 @@ function reset(fromCp){
   player.vy = 0; player.vx = 0; player.ground = false; player.plat = null;
   input.left = false; input.right = false; holding = false;
   camX = Math.max(0, player.x - W * 0.36);
-  if (!fromCp) { coinsGot = 0; cpReached = 0; startX = CONFIG.clampL; lives = CONFIG.startLives; }
+  if (!fromCp) { coinsGot = 0; cpReached = 0; startX = CONFIG.clampL; lives = CONFIG.startLives; deathsSinceCp = 0; }
   invT = 0;
   state = "play"; deadT = 0; winT = 0; doorOpen = 0; shake = 0;
   for (var ei = 0; ei < W2.enemies.length; ei++){
@@ -382,7 +410,7 @@ function jump(){
   if (state === "dead"){
     if (deadT > 0.75){
       if (lives > 0) reviveAt(respawnX(deathX));
-      else { lives = CONFIG.startLives; reviveAt(startX); }
+      else { lives = CONFIG.startLives; deathsSinceCp = 0; reviveAt(startX); }
     }
     return;
   }
@@ -447,6 +475,13 @@ function die(){
   if (invT > 0) return;
   deathX = player.x;
   lives--;
+  deathsSinceCp++;
+  /* 从上个检查点起累计死三次，补一条命 */
+  if (deathsSinceCp >= 3){
+    lives++;
+    deathsSinceCp = 0;
+    SFX.life();
+  }
   state = "dead"; deadT = 0; shake = 1;
   SFX.die();
 }
@@ -607,9 +642,9 @@ function update(dt){
           overlap(player.x + 4, player.y + player.h - 6, player.w - 8, 10,
                   item.x, item.y, item.w, item.h)){
         player.y = item.y - player.h;
-        player.vy = -1150;
+        player.vy = item.low ? CONFIG.springLow : -1150;
         player.ground = false; player.plat = null;
-        item.anim = 0.26;
+        item.anim = item.low ? 0.22 : 0.26;
         SFX.spring();
       }
       continue;
@@ -626,7 +661,16 @@ function update(dt){
   if (cpReached < W2.cps.length && player.x >= W2.cps[cpReached].x){
     cpReached++;
     startX = W2.cps[cpReached - 1].x;
+    deathsSinceCp = 0;
     SFX.check();
+  }
+
+  /* 落水：海面比陆地低，掉进去就算死 */
+  for (var seaN = 0; seaN < W2.seas.length; seaN++){
+    var sea = W2.seas[seaN];
+    if (player.x + player.w > sea.x0 && player.x < sea.x1){
+      if (player.y + player.h > sea.wy + 2 && !player.plat) return die();
+    }
   }
 
   if (player.y > CONFIG.fallDeath) return die();
@@ -751,6 +795,32 @@ function drawGears(){
   }
 }
 
+function drawSea(){
+  for (var i = 0; i < W2.seas.length; i++){
+    var sea = W2.seas[i];
+    var x0 = sea.x0 - camX, x1 = sea.x1 - camX;
+    if (x1 < -40 || x0 > W + 40) continue;
+    var wy = sea.wy;
+    var g = ctx.createLinearGradient(0, wy - 8, 0, H);
+    g.addColorStop(0, "rgba(96,168,232,.82)");
+    g.addColorStop(0.28, "rgba(46,104,180,.92)");
+    g.addColorStop(1, "rgba(14,36,82,.95)");
+    ctx.fillStyle = g;
+    ctx.fillRect(x0, wy - 8, x1 - x0, H - wy + 8);
+    ctx.strokeStyle = "rgba(205,232,255,.55)";
+    ctx.lineWidth = 2;
+    for (var w2 = 0; w2 < 5; w2++){
+      var wx = x0 + (w2 + 0.5) * (x1 - x0) / 5 + Math.sin(tAll * 2 + w2) * 9;
+      ctx.beginPath();
+      ctx.moveTo(wx - 28, wy);
+      ctx.quadraticCurveTo(wx, wy - 7 + Math.sin(tAll * 3 + w2) * 3, wx + 28, wy);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "rgba(255,255,255,.22)";
+    ctx.fillRect(x0, wy - 8, x1 - x0, 3);
+  }
+}
+
 function drawPlats(){
   for (var i = 0; i < W2.plats.length; i++){
     var p = W2.plats[i];
@@ -779,6 +849,28 @@ function drawPlats(){
       ctx.beginPath();
       ctx.ellipse(x + pr.w * 0.27, pr.y + 7, pr.w * 0.15, 4, 0, 0, 7);
       ctx.fill();
+      continue;
+    }
+
+    if (p.kind === "rock"){
+      /* 海里的石块：露出海面的灰石头 */
+      ctx.fillStyle = "#6f7b8c";
+      ctx.beginPath();
+      ctx.moveTo(x, pr.y + 16);
+      ctx.lineTo(x + pr.w * 0.1, pr.y + 2);
+      ctx.lineTo(x + pr.w * 0.34, pr.y - 6);
+      ctx.lineTo(x + pr.w * 0.62, pr.y - 2);
+      ctx.lineTo(x + pr.w * 0.86, pr.y + 3);
+      ctx.lineTo(x + pr.w, pr.y + 16);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,.2)";
+      ctx.beginPath();
+      ctx.moveTo(x + pr.w * 0.1, pr.y + 2);
+      ctx.lineTo(x + pr.w * 0.34, pr.y - 6);
+      ctx.lineTo(x + pr.w * 0.28, pr.y + 8);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "rgba(10,20,40,.28)";
+      ctx.fillRect(x + 3, pr.y + 13, pr.w - 6, 4);
       continue;
     }
 
@@ -1092,6 +1184,11 @@ function drawHUD(){
     ctx.fillStyle = "#ffe08a";
     ctx.fillText("★ " + Math.ceil(invT) + "s", 104 + heartN * 21, 48);
   }
+  if (deathsSinceCp > 0 && state === "play"){
+    ctx.font = "11px -apple-system,'PingFang SC',sans-serif";
+    ctx.fillStyle = "#ffb4b4";
+    ctx.fillText("本 段 失 命 " + deathsSinceCp + " 次", 26, 72);
+  }
 
   var pct = Math.max(0, Math.min(1, player.x / W2.end));
   ctx.fillStyle = "rgba(20,26,40,.35)";
@@ -1188,6 +1285,7 @@ function render(){
   drawCastle();
   drawCoins();
   drawCheckpoints();
+  drawSea();
   drawPlats();
   drawGears();
   drawItems();
