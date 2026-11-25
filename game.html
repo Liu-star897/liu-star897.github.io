@@ -56,7 +56,8 @@ var CONFIG = {
   jumpCut: -260,
   walk: 300,         // 按住方向键走的速度（px/秒）
   clampL: 40,        // 最左边能退到哪
-  fallDeath: 720
+  fallDeath: 720,
+  startLives: 1      // 初始几条命（有检查点和加血，所以从一条开始）
 };
 
 var LEVEL = {
@@ -95,8 +96,19 @@ playerImg.src = "img/player.png";
 function genWorld(){
   var O = { segs: [], spikes: [], gears: [], plats: [], coins: [], cps: [], enemies: [], items: [], end: LEN, endY: FLOOR };
   var x = 0, y = FLOOR, i = 1;
+  var lastT = -1;
+  var POOL = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 10, 12];
 
   function clampY(v){ return Math.max(FLOOR - 132, Math.min(FLOOR + 58, v)); }
+
+  function pickT(){
+    var avail = [];
+    for (var k = 0; k < POOL.length; k++) if (POOL[k] !== lastT) avail.push(POOL[k]);
+    if (!avail.length) avail = POOL.slice();
+    var idx = Math.floor(Math.random() * avail.length);
+    lastT = avail[idx];
+    return lastT;
+  }
   function sg(a, b, yy){ O.segs.push({ x0: a, x1: b, y: yy }); }
   function cn(cx, cy){ O.coins.push({ x: cx, y: cy }); }
   function arc(x0, n, gap, yy){
@@ -119,15 +131,16 @@ function genWorld(){
   x = 420;
 
   while (x < LEN - 2800){
-    var t = i % 10;
+    var t = pickT();
     var w = 800;
 
     if (t === 0){
-      /* 平地 + 一只怪 */
-      w = 820;
+      /* 平地 + 两只怪，错开 */
+      w = 900;
       sg(x, x + w, y);
-      arc(x + 110, 5, 88, y);
-      foe(x + 620, y);
+      arc(x + 110, 5, 86, y);
+      foe(x + 520, y);
+      foe(x + 790, y);
 
     } else if (t === 1){
       /* 三级上台阶 */
@@ -156,7 +169,7 @@ function genWorld(){
       var yq = clampY(y + 28);
       sg(x, x + 280, y);
       sg(x + 580, x + w, yq);
-      O.plats.push({ x: x + 320, y: y - 84, w: 160, span: 0, sp: 0, ph: 0 });
+      O.plats.push({ x: x + 320, y: y - 84, w: 160, span: 0, sp: 0, ph: 0, kind: "wood" });
       cn(x + 400, y - 142);
       y = yq;
 
@@ -207,18 +220,46 @@ function genWorld(){
       arc(x + 300, 3, 80, yd);
       y = ye;
 
+    } else if (t === 10){
+      /* 天空浮岛：一段深坑，上空悬着三块云台，要一路跳过去 */
+      w = 1020;
+      sg(x, x + 270, y);
+      sg(x + 800, x + w, y);
+      var cxs = [x + 330, x + 520, x + 700];
+      for (var cc = 0; cc < 3; cc++){
+        var py = y - (cc === 1 ? 118 : 74);
+        O.plats.push({ x: cxs[cc], y: py, w: 156, span: 0, sp: 0, ph: 0, kind: "cloud" });
+        cn(cxs[cc] + 34, py - 46);
+        cn(cxs[cc] + 120, py - 46);
+      }
+      cn(x + 190, y - 48);
+      cn(x + 860, y - 48);
+
+    } else if (t === 11){
+      /* 陷阱密集带：刺和齿轮交替，要跳着过 */
+      w = 900;
+      sg(x, x + w, y);
+      O.spikes.push({ x: x + 190, n: 3 });
+      O.gears.push({ x: x + 450, y: y - 34, r: 19, span: 0, sp: 0, ph: i });
+      O.spikes.push({ x: x + 610, n: 4 });
+      O.gears.push({ x: x + 790, y: y - 30, r: 16, span: 70, sp: 1.1, ph: i });
+      arc(x + 60, 3, 78, y);
+      cn(x + 540, y - 84);
+      cn(x + 760, y - 112);
+
     } else {
       /* 平地带刺 + 怪，两者错开 */
-      w = 880;
+      w = 920;
       sg(x, x + w, y);
-      O.spikes.push({ x: x + 280, n: 3 });
-      foe(x + 680, y);
+      O.spikes.push({ x: x + 280, n: 4 });
+      foe(x + 640, y);
+      O.spikes.push({ x: x + 760, n: 2 });
       arc(x + 80, 5, 86, y);
     }
 
     /* 稀疏地放加命蘑菇和星星 */
-    if (i % 9 === 4) O.items.push({ type: "life", x: x + 720, y: y - 60, w: 26, h: 26, got: false, anim: 0 });
-    if (i % 13 === 7) O.items.push({ type: "star", x: x + 770, y: y - 68, w: 26, h: 26, got: false, anim: 0 });
+    if (i % 8 === 3) O.items.push({ type: "life", x: x + 720, y: y - 60, w: 26, h: 26, got: false, anim: 0 });
+    if (i % 11 === 6) O.items.push({ type: "star", x: x + 770, y: y - 68, w: 26, h: 26, got: false, anim: 0 });
 
     x += w;
     i++;
@@ -304,7 +345,7 @@ var SFX = {
 var player = { x: 70, y: FLOOR - 40, w: 28, h: 40, vy: 0, vx: 0, ground: false, runT: 0, plat: null };
 var input = { left: false, right: false };
 var camX = 0, coinsGot = 0, state = "play", deadT = 0, holdT = 0;
-var lives = 3, invT = 0, deathX = 0;
+var lives = CONFIG.startLives, invT = 0, deathX = 0;
 var holding = false, hintT = 4, tAll = 0, shake = 0;
 var startX = 70, cpReached = 0, winT = 0, doorOpen = 0;
 
@@ -324,7 +365,7 @@ function reset(fromCp){
   player.vy = 0; player.vx = 0; player.ground = false; player.plat = null;
   input.left = false; input.right = false; holding = false;
   camX = Math.max(0, player.x - W * 0.36);
-  if (!fromCp) { coinsGot = 0; cpReached = 0; startX = CONFIG.clampL; lives = 3; }
+  if (!fromCp) { coinsGot = 0; cpReached = 0; startX = CONFIG.clampL; lives = CONFIG.startLives; }
   invT = 0;
   state = "play"; deadT = 0; winT = 0; doorOpen = 0; shake = 0;
   for (var ei = 0; ei < W2.enemies.length; ei++){
@@ -341,7 +382,7 @@ function jump(){
   if (state === "dead"){
     if (deadT > 0.75){
       if (lives > 0) reviveAt(respawnX(deathX));
-      else { lives = 3; reviveAt(startX); }
+      else { lives = CONFIG.startLives; reviveAt(startX); }
     }
     return;
   }
@@ -712,9 +753,35 @@ function drawGears(){
 
 function drawPlats(){
   for (var i = 0; i < W2.plats.length; i++){
-    var pr = platRect(W2.plats[i], tAll);
+    var p = W2.plats[i];
+    var pr = platRect(p, tAll);
     var x = pr.x - camX;
     if (x < -240 || x > W + 240) continue;
+
+    if (p.kind === "cloud"){
+      /* 天空云台：白软云朵，底下悬空 */
+      ctx.fillStyle = "rgba(255,255,255,.97)";
+      ctx.beginPath();
+      ctx.moveTo(x, pr.y + 14);
+      ctx.quadraticCurveTo(x - 2, pr.y + 2, x + pr.w * 0.2, pr.y - 4);
+      ctx.quadraticCurveTo(x + pr.w * 0.38, pr.y - 17, x + pr.w * 0.55, pr.y - 5);
+      ctx.quadraticCurveTo(x + pr.w * 0.72, pr.y - 16, x + pr.w, pr.y - 3);
+      ctx.quadraticCurveTo(x + pr.w + 2, pr.y + 8, x, pr.y + 14);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "rgba(178,208,255,.92)";
+      ctx.beginPath();
+      ctx.moveTo(x + 8, pr.y + 12);
+      ctx.quadraticCurveTo(x + pr.w / 2, pr.y + 27, x + pr.w - 8, pr.y + 12);
+      ctx.quadraticCurveTo(x + pr.w - 8, pr.y + 24, x + pr.w / 2, pr.y + 24);
+      ctx.quadraticCurveTo(x + 8, pr.y + 24, x + 8, pr.y + 12);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,.8)";
+      ctx.beginPath();
+      ctx.ellipse(x + pr.w * 0.27, pr.y + 7, pr.w * 0.15, 4, 0, 0, 7);
+      ctx.fill();
+      continue;
+    }
+
     ctx.fillStyle = "#9c5b33";
     ctx.fillRect(x, pr.y, pr.w, 16);
     ctx.fillStyle = "#cf8b58";
@@ -1015,7 +1082,7 @@ function drawHUD(){
   ctx.fillStyle = "#fff";
   ctx.fillText("YOU GOT: " + coinsGot, 24, 21);
   ctx.font = "17px -apple-system,'PingFang SC',sans-serif";
-  var heartN = Math.max(3, lives);
+  var heartN = Math.max(1, lives);
   for (var hi = 0; hi < heartN; hi++){
     ctx.fillStyle = hi < lives ? "#ff9db4" : "rgba(255,255,255,.2)";
     ctx.fillText("♥", 26 + hi * 21, 45);
@@ -1058,7 +1125,7 @@ function drawHUD(){
     ctx.fillText("倒 下 了", W / 2, H / 2 - 20);
     ctx.font = "15px -apple-system,'PingFang SC',sans-serif";
     ctx.fillStyle = "rgba(255,255,255,.85)";
-    ctx.fillText(lives > 0 ? "还 剩 " + lives + " 条 命" : "命 用 完 了 · 回 到 上 一 面 旗 子", W / 2, H / 2 + 20);
+    ctx.fillText(lives > 0 ? "还 剩 " + lives + " 条 命" : "命 用 完 了 · 回 到 检 查 点", W / 2, H / 2 + 20);
     if (deadT > 0.75) ctx.fillText("点 一 下 继 续", W / 2, H / 2 + 52);
   }
 }
