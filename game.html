@@ -1194,6 +1194,26 @@ function drawPlayer(){
   ctx.globalAlpha = 1;
 }
 
+/* 开头操作提示：画在世界里，跟着相机走，不悬浮在屏幕正中 */
+function drawWorldHint(){
+  if (hintT <= 0 || state !== "play") return;
+  var a = Math.min(1, hintT);
+  var hx = player.x - camX + 34, hy = player.y - 54;
+  var ww = 172, hh = 34;
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.fillStyle = "rgba(20,24,40,.82)";
+  roundRect(hx - ww / 2, hy - hh / 2, ww, hh, 9);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,214,160,.6)"; ctx.lineWidth = 1.6;
+  ctx.stroke();
+  ctx.fillStyle = "#ffeacb";
+  ctx.font = "bold 15px -apple-system,'PingFang SC',sans-serif";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText("← → 走    ↑ 跳", hx, hy + 1);
+  ctx.restore();
+}
+
 function drawHUD(){
   ctx.fillStyle = "rgba(20,26,40,.55)";
   ctx.fillRect(14, 14, 200, 62);
@@ -1229,17 +1249,6 @@ function drawHUD(){
   ctx.textAlign = "center";
   ctx.fillStyle = "rgba(60,50,70,.6)";
   ctx.fillText(Math.round(pct * 100) + "%", W / 2, 38);
-
-  if (hintT > 0 && state === "play"){
-    ctx.globalAlpha = Math.min(1, hintT);
-    ctx.font = "16px -apple-system,'PingFang SC',sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillStyle = "rgba(40,44,60,.7)";
-    ctx.fillRect(W / 2 - 150, H * 0.28, 300, 34);
-    ctx.fillStyle = "#fff";
-    ctx.fillText("←  →  走        ↑  跳", W / 2, H * 0.28 + 10);
-    ctx.globalAlpha = 1;
-  }
 
   if (state === "dead"){
     ctx.fillStyle = "rgba(120,20,40," + Math.min(0.45, deadT * 1.4) + ")";
@@ -1321,6 +1330,7 @@ function render(){
   drawSpikes();
   drawFloor();
   drawPlayer();
+  drawWorldHint();
   ctx.restore();
   drawHUD();
   drawWin();
