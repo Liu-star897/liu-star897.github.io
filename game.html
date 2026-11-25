@@ -94,7 +94,7 @@ playerImg.src = "img/player.png";
 /* ---------- 生成整条路：由一块块有高差的地形拼起来 ---------- */
 function genWorld(){
   var O = { segs: [], spikes: [], gears: [], plats: [], coins: [], cps: [], enemies: [], items: [], end: LEN, endY: FLOOR };
-  var x = 0, y = FLOOR, i = 0;
+  var x = 0, y = FLOOR, i = 1;
 
   function clampY(v){ return Math.max(FLOOR - 132, Math.min(FLOOR + 58, v)); }
   function sg(a, b, yy){ O.segs.push({ x0: a, x1: b, y: yy }); }
@@ -113,10 +113,10 @@ function genWorld(){
     O.items.push({ type: kind, x: cx, y: gy - lift, w: 36, h: 26, got: false, anim: 0 });
   }
 
-  /* 起步：一段平地，先让人熟悉操作 */
-  sg(0, 960, FLOOR);
-  arc(220, 5, 90, FLOOR);
-  x = 960;
+  /* 起步：一小段平地当缓冲，走两步就开始上台阶 */
+  sg(0, 420, FLOOR);
+  arc(170, 3, 82, FLOOR);
+  x = 420;
 
   while (x < LEN - 2800){
     var t = i % 10;
