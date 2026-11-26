@@ -915,12 +915,14 @@ var CONFIG = {
 
   /* 在手势里先 play 一下再立刻暂停：Safari 要求逐个元素解锁 */
   function armHallBgm(){
+    if (hallEntered) return;
     var a = document.getElementById("hallBgm");
     if (!a) return;
     try {
       a.volume = 0;
       var p = a.play();
-      var back = function(){ try { a.pause(); a.currentTime = 0; a.volume = 0; } catch (e) {} };
+      /* 解锁完马上按停；但如果这一刻主会场已经开始放了（enterHall 抢先），就别按了 */
+      var back = function(){ if (hallEntered) return; try { a.pause(); a.currentTime = 0; a.volume = 0; } catch (e) {} };
       if (p && p.then) p.then(back).catch(function(){});
       else back();
     } catch (e) {}
