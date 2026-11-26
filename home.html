@@ -175,10 +175,24 @@
       a.addEventListener("click", function(e){
         e.preventDefault();
         document.getElementById("fade").classList.add("on");
+        if (!inFrame && typeof ramp === "function") ramp(0, 260);
         setTimeout(function(){ location.href = a.getAttribute("href"); }, 380);
       });
     })(links[i]);
   }
+
+  /* 鼠标移到小游戏上就把曲子先拉下来，点开不卡 */
+  (function(){
+    var gl = null, all = document.querySelectorAll('a[href="game.html"]');
+    for (var k = 0; k < all.length; k++){ (function(el){ if (gl) return; gl = el; })(all[k]); }
+    if (!gl) return;
+    var warm = false;
+    gl.addEventListener("mouseenter", function(){
+      if (warm) return;
+      warm = true;
+      try { var w = new Audio(); w.preload = "auto"; w.src = "bgm/fangcaodi.mp3?v=1"; } catch (e) {}
+    });
+  })();
 })();
 </script>
 </body>
