@@ -1009,10 +1009,18 @@ var CONFIG = {
   }
 
   /* 小游戏会 postMessage 告诉我们它开始/停止放音乐 */
+  function hallIframeInGame(){
+    try {
+      var h = document.getElementById("hall");
+      return !!h && /game\.html/.test(h.contentWindow.location.pathname);
+    } catch (e) { return false; }
+  }
   window.addEventListener("message", function(e){
     var d = e.data;
     if (!d || typeof d !== "object" || !("dshGameBgm" in d)) return;
-    if (d.dshGameBgm === "on") hallDuck(); else hallUnduck();
+    /* 在游戏里关掉游戏音乐 = 此刻安静，别把主会场的曲子顶上来；等回到夜市再淡回来 */
+    if (d.dshGameBgm === "on") hallDuck();
+    else if (!hallIframeInGame()) hallUnduck();
   });
 
   /* 兜底：没收到消息时，看 iframe 现在停在哪一页 */
