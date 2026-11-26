@@ -253,11 +253,11 @@ function genWorld(){
       sg(x + 1580, x + w, y);
       O.items.push({ type: "spring", x: x + 190, y: y - 34, w: 40, h: 34, got: false, anim: 0 });
       var cl = [
-        { x: x + 380,  y: y - 150, w: 170 },
-        { x: x + 620,  y: y - 190, w: 150 },
-        { x: x + 840,  y: y - 150, w: 300 },
-        { x: x + 1200, y: y - 190, w: 150 },
-        { x: x + 1420, y: y - 150, w: 150 }
+        { x: x + 380,  y: y - 118, w: 170 },
+        { x: x + 620,  y: y - 158, w: 150 },
+        { x: x + 840,  y: y - 118, w: 300 },
+        { x: x + 1200, y: y - 158, w: 150 },
+        { x: x + 1420, y: y - 118, w: 150 }
       ];
       for (var cc = 0; cc < cl.length; cc++){
         var c0 = cl[cc];
@@ -292,8 +292,8 @@ function genWorld(){
       O.seas.push({ x0: x + 570, x1: x + 1100, wy: wy });
       var rocks = [x + 650, x + 830, x + 1010];
       for (var rk = 0; rk < 3; rk++){
-        O.plats.push({ x: rocks[rk], y: wy - 26, w: 70, span: 0, sp: 0, ph: 0, kind: "rock" });
-        cn(rocks[rk] + 35, wy - 88);
+        O.plats.push({ x: rocks[rk], y: wy - 12, w: 70, span: 0, sp: 0, ph: 0, kind: "rock" });
+        cn(rocks[rk] + 35, wy - 74);
       }
       var r2 = ramp(x + 1100, x + 1430, wy, y);
       sg(r2, x + w, y);
@@ -408,7 +408,7 @@ var SFX = {
 /* ---------- 状态 ---------- */
 var player = { x: 70, y: FLOOR - 40, w: 28, h: 40, vy: 0, vx: 0, ground: false, runT: 0, plat: null };
 var input = { left: false, right: false };
-var camX = 0, coinsGot = 0, state = "play", deadT = 0, holdT = 0;
+var camX = 0, camY = 0, coinsGot = 0, state = "play", deadT = 0, holdT = 0;
 var lives = CONFIG.startLives, invT = 0, deathX = 0;
 var holding = false, hintT = 4, tAll = 0, shake = 0;
 var startX = 70, cpReached = 0, winT = 0, doorOpen = 0;
@@ -439,6 +439,7 @@ function reset(fromCp){
   player.vy = 0; player.vx = 0; player.ground = false; player.plat = null;
   input.left = false; input.right = false; holding = false;
   camX = Math.max(0, player.x - W * 0.36);
+  camY = 0;
   if (!fromCp) { coinsGot = 0; cpReached = 0; startX = CONFIG.clampL; lives = CONFIG.startLives; deathsSinceCp = 0; }
   invT = 0;
   state = "play"; deadT = 0; winT = 0; doorOpen = 0; shake = 0;
@@ -619,6 +620,7 @@ function update(dt){
   }
 
   /* 地面 */
+  var wasGround = player.ground;
   var segG = segAt(player.x + player.w * 0.5);
   var gy = segYAt(segG, player.x + player.w * 0.5);
   player.ground = false;
@@ -627,7 +629,7 @@ function update(dt){
     var snap = segG.slope ? 40 : 6;
     if (player.vy >= 0 && feet0 >= gy && prevBottom <= gy + 14){
       player.y = gy - player.h; player.vy = 0; player.ground = true; player.plat = null;
-    } else if (feet0 < gy && gy - feet0 < snap && player.vy >= 0 && !holding){
+    } else if (feet0 < gy && gy - feet0 < snap && player.vy >= 0 && !holding && wasGround && player.vy < 240){
       /* 斜坡往下走：顺势贴上去，别一截一截地踩空 */
       player.y = gy - player.h; player.vy = 0; player.ground = true; player.plat = null;
     } else if (feet0 > gy + 4 && player.vy > 0){
@@ -640,6 +642,17 @@ function update(dt){
   if (camTarget < 0) camTarget = 0;
   if (camTarget > W2.end - W * 0.5) camTarget = W2.end - W * 0.5;
   camX += (camTarget - camX) * Math.min(1, dt * 9);
+
+  /* 竖向镜头：站得高（台阶顶、云台）时画面跟着抬一点，人别顶在画面上沿 */
+  var anchorY = null;
+  if (player.plat) anchorY = player.plat.y;
+  else { var surfY = groundYAt(player.x + player.w / 2); if (surfY !== null) anchorY = surfY; }
+  if (anchorY !== null){
+    var camTargetY = anchorY - H * 0.71;
+    if (camTargetY > 0) camTargetY = 0;
+    if (camTargetY < -70) camTargetY = -70;
+    camY += (camTargetY - camY) * Math.min(1, dt * 5);
+  }
 
   /* 金币 */
   for (var c = 0; c < W2.coins.length; c++){
@@ -793,9 +806,10 @@ function drawFloor(){
     var x0 = s.x0 - camX, x1 = s.x1 - camX;
     if (x1 < -40 || x0 > W + 40) continue;
     var yA = s.slope ? s.y0 : s.y;
+    var yBot = H - camY + 80;
     ctx.fillStyle = "#a9562f";
     ctx.beginPath();
-    ctx.moveTo(x0, yA); ctx.lineTo(x1, s.y); ctx.lineTo(x1, H); ctx.lineTo(x0, H);
+    ctx.moveTo(x0, yA); ctx.lineTo(x1, s.y); ctx.lineTo(x1, yBot); ctx.lineTo(x0, yBot);
     ctx.closePath(); ctx.fill();
     /* 顶面亮边：斜坡是斜的一条，平地段是横的一条 */
     ctx.fillStyle = "#d98a55";
@@ -882,23 +896,25 @@ function drawSea(){
     var x0 = sea.x0 - camX, x1 = sea.x1 - camX;
     if (x1 < -40 || x0 > W + 40) continue;
     var wy = sea.wy;
-    var g = ctx.createLinearGradient(0, wy - 8, 0, H);
+    var yBot = H - camY + 80;
+    /* 水面就是 wy：不再往上抬 8px，否则看着比岸还高 */
+    var g = ctx.createLinearGradient(0, wy, 0, yBot);
     g.addColorStop(0, "rgba(96,168,232,.82)");
     g.addColorStop(0.28, "rgba(46,104,180,.92)");
     g.addColorStop(1, "rgba(14,36,82,.95)");
     ctx.fillStyle = g;
-    ctx.fillRect(x0, wy - 8, x1 - x0, H - wy + 8);
+    ctx.fillRect(x0, wy, x1 - x0, yBot - wy);
     ctx.strokeStyle = "rgba(205,232,255,.55)";
     ctx.lineWidth = 2;
     for (var w2 = 0; w2 < 5; w2++){
       var wx = x0 + (w2 + 0.5) * (x1 - x0) / 5 + Math.sin(tAll * 2 + w2) * 9;
       ctx.beginPath();
-      ctx.moveTo(wx - 28, wy);
-      ctx.quadraticCurveTo(wx, wy - 7 + Math.sin(tAll * 3 + w2) * 3, wx + 28, wy);
+      ctx.moveTo(wx - 28, wy + 3);
+      ctx.quadraticCurveTo(wx, wy - 3 + Math.sin(tAll * 3 + w2) * 2, wx + 28, wy + 3);
       ctx.stroke();
     }
     ctx.fillStyle = "rgba(255,255,255,.22)";
-    ctx.fillRect(x0, wy - 8, x1 - x0, 3);
+    ctx.fillRect(x0, wy, x1 - x0, 3);
   }
 }
 
@@ -1372,6 +1388,7 @@ function render(){
     ctx.translate((Math.random() - 0.5) * 10 * shake, (Math.random() - 0.5) * 10 * shake);
   }
   bg();
+  ctx.translate(0, -camY);
   drawCastle();
   drawCoins();
   drawCheckpoints();
