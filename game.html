@@ -1528,7 +1528,7 @@ requestAnimationFrame(loop);
   /* 浏览器不给直接出声（比如单开 game.html）：先静音自动播起来，
      用户第一次按键/碰屏幕的那一刻再打开声音，不需要点开关 */
   function quietAuto(){
-    paint(true); arm();
+    paint(true); arm(); ping("on");
     try { el.muted = true; } catch (e) {}
     var p = null;
     try { p = el.play(); } catch (e) {}
