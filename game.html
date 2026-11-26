@@ -43,7 +43,7 @@
 <div id="box">
   <a class="back" href="home.html">← 回夜市</a>
   <button class="mbtn" id="mbtn" title="点一下关掉音乐">♪</button>
-  <audio id="gameBgm" src="bgm/fangcaodi.mp3?v=1" loop preload="auto" playsinline></audio>
+  <audio id="gameBgm" src="bgm/fangcaodi.mp3?v=2" loop preload="auto" playsinline></audio>
   <canvas id="cv"></canvas>
   <div id="pads">
     <div class="pad l" data-k="left">←<i>走</i></div>
@@ -1510,8 +1510,10 @@ requestAnimationFrame(loop);
     btn.title = on ? "点一下关掉音乐" : "点一下打开音乐";
   }
 
-  function play(){
+  /* 直接出声放：从主会场点进来时，基本就是这一条路 */
+  function playSound(){
     if (off) return;
+    try { el.muted = false; } catch (e) {}
     try { el.volume = 0; } catch (e) {}
     var p = null;
     try { p = el.play(); } catch (e) {}
@@ -1519,24 +1521,36 @@ requestAnimationFrame(loop);
       p.then(function(){
         paint(true); ramp(TARGET, 1500); ping("on");
         try { console.log("[bgm] playing"); } catch (e) {}
-      }).catch(function(){
-        paint(false); arm();
-        try { console.log("[bgm] blocked, waiting for gesture"); } catch (e) {}
-      });
+      }).catch(function(){ quietAuto(); });
     } else { paint(true); ramp(TARGET, 1500); ping("on"); }
   }
 
-  /* 被浏览器拦了：等第一次点击/按键再起（玩游戏本来就要按键） */
+  /* 浏览器不给直接出声（比如单开 game.html）：先静音自动播起来，
+     用户第一次按键/碰屏幕的那一刻再打开声音，不需要点开关 */
+  function quietAuto(){
+    try { el.muted = true; } catch (e) {}
+    var p = null;
+    try { p = el.play(); } catch (e) {}
+    var ok = function(){
+      paint(true); arm();
+      try { console.log("[bgm] silent autoplay, sound on first input"); } catch (e) {}
+    };
+    if (p && p.then) p.then(ok).catch(function(){ paint(false); arm(); });
+    else ok();
+  }
+
   function arm(){
     if (armed) return;
     armed = true;
-    var kick = function(){
+    var kick = function(e){
       if (!armed) return;
+      if (e && e.target && e.target.id === "mbtn") return;
       armed = false;
       document.removeEventListener("pointerdown", kick, true);
       document.removeEventListener("keydown", kick, true);
       document.removeEventListener("touchstart", kick, true);
-      play();
+      if (off) return;
+      playSound();
     };
     document.addEventListener("pointerdown", kick, true);
     document.addEventListener("keydown", kick, true);
@@ -1546,7 +1560,7 @@ requestAnimationFrame(loop);
   btn.addEventListener("click", function(e){
     e.preventDefault();
     e.stopPropagation();
-    if (el.paused){ off = false; play(); }
+    if (off || el.paused){ off = false; playSound(); }
     else {
       off = true;
       try { el.pause(); } catch (e2) {}
@@ -1557,10 +1571,10 @@ requestAnimationFrame(loop);
   /* 切到后台就停，省电；回来接着放 */
   document.addEventListener("visibilitychange", function(){
     if (document.hidden){ try { el.pause(); } catch (e) {} }
-    else if (!off && el.paused){ play(); }
+    else if (!off && el.paused){ playSound(); }
   });
 
-  play();
+  playSound();
 })();
 </script>
 </body>
