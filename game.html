@@ -114,10 +114,11 @@ function genWorld(){
   function ramp(a, b, y0, y1){
     var dy = y1 - y0;
     var n = Math.max(1, Math.round(Math.abs(dy) / 18));
-    var step = dy / n, rx = a;
+    var step = dy / n, segW = (b - a) / n, rx = a;
     for (var k = 1; k <= n; k++){
-      rx += 110;
-      O.segs.push({ x0: rx - 110, x1: rx, y: y0 + step * k });
+      var x1 = a + segW * k;
+      O.segs.push({ x0: rx, x1: x1, y: y0 + step * k });
+      rx = x1;
     }
     return rx;
   }
@@ -170,10 +171,9 @@ function genWorld(){
       w = 940;
       var yp = clampY(y - 50);
       sg(x, x + 200, y);
-      var r1 = ramp(x + 200, x + 530, y, yp);
-      sg(r1, x + 760, yp);
-      var r2 = ramp(x + 760, x + 1090, yp, y);
-      sg(r2, x + w, y);
+      var r1 = ramp(x + 200, x + 480, y, yp);
+      sg(r1, x + 700, yp);
+      var r2 = ramp(x + 700, x + w, yp, y);
       arc(x + 330, 4, 92, yp);
       foe(x + 610, yp, 80);
 
@@ -212,8 +212,7 @@ function genWorld(){
       sg(x, x + 240, y);
       var r1 = ramp(x + 240, x + 570, y, yv);
       sg(r1, x + 800, yv);
-      var r2 = ramp(x + 800, x + 1130, yv, y);
-      sg(r2, x + w, y);
+      var r2 = ramp(x + 800, x + w, yv, y);
       foe(x + 430, yv, 100);
       foe(x + 640, yv, 80);
       for (var v = 0; v < 5; v++) cn(x + 300 + v * 80, yv - 48);
@@ -305,12 +304,6 @@ function genWorld(){
     /* 稀疏地放加命蘑菇和星星 */
     if (i % 8 === 3) O.items.push({ type: "life", x: x + 720, y: y - 60, w: 26, h: 26, got: false, anim: 0 });
     if (i % 11 === 6) O.items.push({ type: "star", x: x + 770, y: y - 68, w: 26, h: 26, got: false, anim: 0 });
-
-    /* 两块地形之间做缓坡，别留下一堵竖墙 */
-    var dyb = y - yStart;
-    if (Math.abs(dyb) > 6){
-      x = ramp(x, x + 110 * Math.max(1, Math.round(Math.abs(dyb) / 18)), yStart, y);
-    }
 
     x += w;
     i++;
@@ -672,7 +665,7 @@ function update(dt){
         player.y = item.y - player.h;
         player.vy = -1150;
         player.ground = false; player.plat = null;
-        item.anim = item.low ? 0.22 : 0.26;
+        item.anim = 0.26;
         SFX.spring();
       }
       continue;
