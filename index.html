@@ -294,7 +294,7 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:
 <div id="skip">跳 过 →</div>
 <div id="music">♪</div>
 <audio id="bgm" src="bgm/9-teen.mp3?v=3" preload="auto" loop playsinline></audio>
-<iframe id="hall" src="home.html" title="夜市"></iframe>
+<iframe id="hall" src="home.html" title="夜市" allow="autoplay"></iframe>
 <audio id="hallBgm" src="bgm/me-you-128.mp3" preload="auto" loop></audio>
 <button id="hmusic" title="音乐">♪</button>
 
@@ -977,6 +977,73 @@ var CONFIG = {
         var ok = function(){ hallPlaying = true; hb.classList.remove("muted"); hallRampTo(0.4, 900); };
         if (p && p.then) p.then(ok).catch(function(){}); else ok();
       }
+    });
+  })();
+
+  /* ---------- 小游戏接管音乐：主会场先退场，回来再淡回来 ---------- */
+  var hallParked = null;
+  function hallDuck(){
+    var a = document.getElementById("hallBgm");
+    if (!a || a.paused || hallParked) return;
+    hallParked = { v: a.volume };
+    hallRampTo(0, 420);
+    setTimeout(function(){
+      if (hallParked){ try { a.pause(); } catch (e) {} }
+    }, 470);
+    try { console.log("[hall] duck"); } catch (e) {}
+  }
+  function hallUnduck(){
+    var a = document.getElementById("hallBgm");
+    if (!hallParked || !a) return;
+    var v = hallParked.v;
+    hallParked = null;
+    try { a.volume = 0; } catch (e) {}
+    var go = function(){ hallRampTo(v, 900); };
+    var p = null;
+    try { p = a.play(); } catch (e) {}
+    if (p && p.then) p.then(go).catch(function(){}); else go();
+    try { console.log("[hall] unduck"); } catch (e) {}
+  }
+
+  /* 小游戏会 postMessage 告诉我们它开始/停止放音乐 */
+  window.addEventListener("message", function(e){
+    var d = e.data;
+    if (!d || typeof d !== "object" || !("dshGameBgm" in d)) return;
+    if (d.dshGameBgm === "on") hallDuck(); else hallUnduck();
+  });
+
+  /* 兜底：没收到消息时，看 iframe 现在停在哪一页 */
+  (function(){
+    var hall = document.getElementById("hall");
+    if (!hall) return;
+    var warm = false;
+    function warmGameBgm(){
+      if (warm) return;
+      warm = true;
+      try { var w = new Audio(); w.preload = "auto"; w.src = "bgm/fangcaodi.mp3?v=1"; } catch (e) {}
+    }
+    function sync(){
+      var u = "";
+      try { u = hall.contentWindow.location.pathname + hall.contentWindow.location.search; } catch (e) { return; }
+      if (/game\.html/.test(u)) hallDuck(); else hallUnduck();
+    }
+    hall.addEventListener("load", sync);
+    hall.addEventListener("load", function(){
+      /* 主会场就位后，趁空把游戏的曲子先拉下来，点开就是即时的 */
+      setTimeout(warmGameBgm, 2500);
+      /* 在 iframe 里点「星星小游戏」的那一下就让它退，不等加载完 */
+      try {
+        var d = hall.contentDocument;
+        if (!d || d.__bgmHooked) return;
+        d.__bgmHooked = true;
+        d.addEventListener("click", function(e){
+          var t = e.target;
+          while (t && t !== d){
+            if (t.tagName === "A" && /game\.html/.test(t.getAttribute("href") || "")){ hallDuck(); return; }
+            t = t.parentNode;
+          }
+        }, true);
+      } catch (e) {}
     });
   })();
 
