@@ -110,17 +110,23 @@ function genWorld(){
     return lastT;
   }
   function sg(a, b, yy){ O.segs.push({ x0: a, x1: b, y: yy }); }
-  /* 在 a..b 之间从 y0 平滑过渡到 y1，避免两块地形之间留下一堵竖墙 */
-  function ramp(a, b, y0, y1){
-    var dy = y1 - y0;
-    var n = Math.max(1, Math.round(Math.abs(dy) / 18));
-    var step = dy / n, segW = (b - a) / n, rx = a;
-    for (var k = 1; k <= n; k++){
-      var x1 = a + segW * k;
-      O.segs.push({ x0: rx, x1: x1, y: y0 + step * k });
-      rx = x1;
+  /* 生成阶段的“地面高度”：和运行期的 groundYAt 一样，斜坡按线性插值 */
+  function segYat(x){
+    for (var k = 0; k < O.segs.length; k++){
+      var s = O.segs[k];
+      if (x >= s.x0 && x < s.x1){
+        if (!s.slope) return s.y;
+        var kk = (x - s.x0) / (s.x1 - s.x0);
+        return s.y0 + (s.y - s.y0) * kk;
+      }
     }
-    return rx;
+    return null;
+  }
+  /* 在 a..b 之间从 y0 平滑过渡到 y1：一整段真正的斜坡（高度随 x 线性插值），
+     不再用一串小台阶去凑——看着是坡，走起来也是坡 */
+  function ramp(a, b, y0, y1){
+    O.segs.push({ x0: a, x1: b, y: y1, y0: y0, slope: true });
+    return b;
   }
   function cn(cx, cy){ O.coins.push({ x: cx, y: cy }); }
   function arc(x0, n, gap, yy){
@@ -131,6 +137,9 @@ function genWorld(){
   }
   function foe(cx, gy, half){
     var h = half || 110;
+    /* 用脚下真实地面兜底：敌人有时候被放在斜坡上，别让它一开始就陷进土里 */
+    var gl = segYat(cx + 14);
+    if (gl !== null) gy = gl;
     O.enemies.push({ x: cx, x0: cx - h, x1: cx + h, y: gy - 28, w: 28, h: 28, dir: -1, dead: false });
   }
   function item(kind, cx, gy, lift){
@@ -237,20 +246,31 @@ function genWorld(){
       y = ye;
 
     } else if (t === 12){
-      /* 天空浮岛：弹簧放在坑前的平地上，弹上悬空云台，云台分散必须一路跳 */
-      w = 1520;
+      /* 天空浮岛：弹簧弹上云路。云台之间间距短、落差小（低处往高处也好跳），
+         中间长的一条云路和地面上一样有小怪在巡逻 */
+      w = 1760;
       sg(x, x + 240, y);
-      sg(x + 1330, x + w, y);
-      O.items.push({ type: "spring", x: x + 200, y: y - 34, w: 40, h: 34, got: false, anim: 0 });
-      var cxs = [x + 380, x + 680, x + 980, x + 1180];
-      var pys = [y - 150, y - 80, y - 150, y - 80];
-      for (var cc = 0; cc < 4; cc++){
-        O.plats.push({ x: cxs[cc], y: pys[cc], w: 130, span: 0, sp: 0, ph: 0, kind: "cloud" });
-        cn(cxs[cc] + 34, pys[cc] - 44);
-        cn(cxs[cc] + 96, pys[cc] - 44);
+      sg(x + 1580, x + w, y);
+      O.items.push({ type: "spring", x: x + 190, y: y - 34, w: 40, h: 34, got: false, anim: 0 });
+      var cl = [
+        { x: x + 380,  y: y - 150, w: 170 },
+        { x: x + 620,  y: y - 190, w: 150 },
+        { x: x + 840,  y: y - 150, w: 300 },
+        { x: x + 1200, y: y - 190, w: 150 },
+        { x: x + 1420, y: y - 150, w: 150 }
+      ];
+      for (var cc = 0; cc < cl.length; cc++){
+        var c0 = cl[cc];
+        O.plats.push({ x: c0.x, y: c0.y, w: c0.w, span: 0, sp: 0, ph: 0, kind: "cloud" });
+        cn(c0.x + 30, c0.y - 44);
+        cn(c0.x + c0.w - 30, c0.y - 44);
+        if (c0.w >= 280){
+          O.enemies.push({ x: c0.x + c0.w * 0.5, x0: c0.x + 44, x1: c0.x + c0.w - 44,
+                           y: c0.y - 28, w: 28, h: 28, dir: -1, dead: false, fixedY: c0.y - 28 });
+        }
       }
       cn(x + 90, y - 48);
-      cn(x + 1400, y - 48);
+      cn(x + 1640, y - 48);
 
     } else if (t === 11){
       /* 陷阱密集带：刺和齿轮交替，要跳着过 */
@@ -394,13 +414,22 @@ var holding = false, hintT = 4, tAll = 0, shake = 0;
 var startX = 70, cpReached = 0, winT = 0, doorOpen = 0;
 var deathsSinceCp = 0;
 
-function groundYAt(x){
+function segAt(x){
   for (var i = 0; i < W2.segs.length; i++){
     var s = W2.segs[i];
-    if (x >= s.x0 && x < s.x1) return s.y;
+    if (x >= s.x0 && x < s.x1) return s;
   }
   return null;
 }
+/* 某段地形在 x 处的实际高度：斜坡线性插值，平地段直接给 y */
+function segYAt(s, x){
+  if (!s) return null;
+  if (!s.slope) return s.y;
+  var k = (x - s.x0) / (s.x1 - s.x0);
+  if (k < 0) k = 0; else if (k > 1) k = 1;
+  return s.y0 + (s.y - s.y0) * k;
+}
+function groundYAt(x){ return segYAt(segAt(x), x); }
 
 function reset(fromCp){
   player.x = fromCp ? startX : 70;
@@ -416,6 +445,10 @@ function reset(fromCp){
   for (var ei = 0; ei < W2.enemies.length; ei++){
     var en0 = W2.enemies[ei];
     en0.dead = false; en0.x = en0.x0; en0.dir = -1;
+    if (en0.fixedY == null){
+      var gy0e = groundYAt(en0.x + en0.w / 2);
+      if (gy0e !== null) en0.y = gy0e - en0.h;
+    }
   }
   for (var ii = 0; ii < W2.items.length; ii++){ W2.items[ii].got = false; W2.items[ii].anim = 0; }
   hintT = fromCp ? 0 : 4;
@@ -551,14 +584,16 @@ function update(dt){
   var nx = player.x + vx * dt;
   if (nx < CONFIG.clampL) nx = CONFIG.clampL;
 
-  /* 走上台阶：前方地面比脚下高，且高差不大，直接抬上去 */
+  /* 台阶判定：新位置的地面比脚底高出一截，那就是台阶的侧面，挡住，得跳上去；
+     只有斜坡（整段插值）和小坎才让顺着走上去。这样台阶才是台阶，不会像缓坡一样滑上去 */
   var midX = nx + player.w / 2;
-  var ahead = groundYAt(midX);
-  var here = groundYAt(player.x + player.w / 2);
-  if (ahead !== null && here !== null && player.ground){
-    var dy = here - ahead;
-    if (dy > 58) nx = player.x;
-    else if (dy > 0) player.y -= dy;
+  var segNew = segAt(midX);
+  if (segNew){
+    var yNew = segYAt(segNew, midX);
+    var rise = (player.y + player.h) - yNew;
+    var tol = segNew.slope ? 40 : 12;
+    if (rise > tol) nx = player.x;
+    else if (rise > 0) player.y -= rise;
   }
   player.x = nx;
 
@@ -584,14 +619,16 @@ function update(dt){
   }
 
   /* 地面 */
-  var gy = groundYAt(player.x + player.w * 0.5);
+  var segG = segAt(player.x + player.w * 0.5);
+  var gy = segYAt(segG, player.x + player.w * 0.5);
   player.ground = false;
   if (gy !== null){
     var feet0 = player.y + player.h;
+    var snap = segG.slope ? 40 : 6;
     if (player.vy >= 0 && feet0 >= gy && prevBottom <= gy + 14){
       player.y = gy - player.h; player.vy = 0; player.ground = true; player.plat = null;
-    } else if (feet0 < gy && gy - feet0 < 30 && player.vy >= 0 && !holding){
-      /* 缓坡：走到下坡时顺势贴上去，别踩空 */
+    } else if (feet0 < gy && gy - feet0 < snap && player.vy >= 0 && !holding){
+      /* 斜坡往下走：顺势贴上去，别一截一截地踩空 */
       player.y = gy - player.h; player.vy = 0; player.ground = true; player.plat = null;
     } else if (feet0 > gy + 4 && player.vy > 0){
       /* 跳进土里：顶出来，别卡住 */
@@ -642,11 +679,26 @@ function update(dt){
     en.x += en.dir * 58 * dt;
     if (en.x < en.x0){ en.x = en.x0; en.dir = 1; }
     if (en.x > en.x1){ en.x = en.x1; en.dir = -1; }
-    if (overlap(player.x + 4, player.y + 8, player.w - 8, player.h - 8, en.x, en.y, en.w, en.h)){
+    /* 怪贴着脚下的地面走：不悬空、也不会陷进台阶里；前面是墙或断崖就掉头 */
+    if (en.fixedY == null){
+      var gyE = groundYAt(en.x + en.w / 2);
+      if (gyE === null){
+        en.dir = -en.dir; en.x += en.dir * 2;
+      } else {
+        en.y = gyE - en.h;
+        var fx = en.dir > 0 ? en.x + en.w + 4 : en.x - 4;
+        var gyF = groundYAt(fx);
+        if (gyF === null || Math.abs(gyF - gyE) > 18){ en.dir = -en.dir; en.x += en.dir * 2; }
+      }
+    }
+    /* 踩怪判定放宽：只要是从上方落下来，落点偏一点也算踩中，不用正头顶 */
+    var hitEn = player.x + player.w > en.x - 2 && player.x < en.x + en.w + 2 &&
+                player.y + player.h > en.y && player.y < en.y + en.h;
+    if (hitEn){
       if (invT > 0){
         en.dead = true; coinsGot++; SFX.stomp();
-      } else if (player.vy > 60 && prevBottom <= en.y + 14){
-        en.dead = true; player.vy = -520; coinsGot++; SFX.stomp();
+      } else if (player.vy > 40 && prevBottom <= en.y + 34){
+        en.dead = true; player.vy = -560; coinsGot++; SFX.stomp();
       } else {
         return die();
       }
@@ -740,18 +792,26 @@ function drawFloor(){
     var s = W2.segs[i];
     var x0 = s.x0 - camX, x1 = s.x1 - camX;
     if (x1 < -40 || x0 > W + 40) continue;
+    var yA = s.slope ? s.y0 : s.y;
     ctx.fillStyle = "#a9562f";
-    ctx.fillRect(x0, s.y, x1 - x0, H - s.y);
+    ctx.beginPath();
+    ctx.moveTo(x0, yA); ctx.lineTo(x1, s.y); ctx.lineTo(x1, H); ctx.lineTo(x0, H);
+    ctx.closePath(); ctx.fill();
+    /* 顶面亮边：斜坡是斜的一条，平地段是横的一条 */
     ctx.fillStyle = "#d98a55";
-    ctx.fillRect(x0, s.y, x1 - x0, 9);
-    ctx.fillStyle = "rgba(0,0,0,.16)";
-    for (var xx = Math.floor(x0 / 34) * 34; xx < x1; xx += 34){
-      ctx.fillRect(xx, s.y + 12, 3, H - s.y - 12);
+    ctx.beginPath();
+    ctx.moveTo(x0, yA); ctx.lineTo(x1, s.y); ctx.lineTo(x1, s.y + 9); ctx.lineTo(x0, yA + 9);
+    ctx.closePath(); ctx.fill();
+    if (!s.slope){
+      ctx.fillStyle = "rgba(0,0,0,.16)";
+      for (var xx = Math.floor(x0 / 34) * 34; xx < x1; xx += 34){
+        ctx.fillRect(xx, s.y + 12, 3, H - s.y - 12);
+      }
+      ctx.fillStyle = "rgba(255,255,255,.14)";
+      ctx.fillRect(x0, s.y + 9, x1 - x0, 2);
+      ctx.fillStyle = "#7d3d22";
+      if (x1 - x0 < W + 200) ctx.fillRect(x1 - 3, s.y + 9, 3, H - s.y - 9);
     }
-    ctx.fillStyle = "rgba(255,255,255,.14)";
-    ctx.fillRect(x0, s.y + 9, x1 - x0, 2);
-    ctx.fillStyle = "#7d3d22";
-    if (x1 - x0 < W + 200) ctx.fillRect(x1 - 3, s.y + 9, 3, H - s.y - 9);
   }
 }
 
