@@ -1528,15 +1528,12 @@ requestAnimationFrame(loop);
   /* 浏览器不给直接出声（比如单开 game.html）：先静音自动播起来，
      用户第一次按键/碰屏幕的那一刻再打开声音，不需要点开关 */
   function quietAuto(){
+    paint(true); arm();
     try { el.muted = true; } catch (e) {}
     var p = null;
     try { p = el.play(); } catch (e) {}
-    var ok = function(){
-      paint(true); arm();
-      try { console.log("[bgm] silent autoplay, sound on first input"); } catch (e) {}
-    };
-    if (p && p.then) p.then(ok).catch(function(){ paint(false); arm(); });
-    else ok();
+    if (p && p.catch) p.catch(function(){ paint(false); });
+    try { console.log("[bgm] silent autoplay, sound on first input"); } catch (e) {}
   }
 
   function arm(){
