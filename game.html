@@ -321,9 +321,15 @@ function genWorld(){
       arc(x + 80, 5, 86, y);
     }
 
-    /* 稀疏地放加命蘑菇和星星 */
-    if (i % 8 === 3) O.items.push({ type: "life", x: x + 720, y: y - 60, w: 26, h: 26, got: false, anim: 0 });
-    if (i % 11 === 6) O.items.push({ type: "star", x: x + 770, y: y - 68, w: 26, h: 26, got: false, anim: 0 });
+    /* 稀疏地放加命蘑菇和星星：只放在真有地面的地方，别挂在天空/海面上 */
+    if (i % 8 === 3){
+      var gLife = segYat(x + 720);
+      if (gLife !== null) O.items.push({ type: "life", x: x + 720, y: gLife - 28, w: 26, h: 26, got: false, anim: 0 });
+    }
+    if (i % 11 === 6){
+      var gStar = segYat(x + 770);
+      if (gStar !== null) O.items.push({ type: "star", x: x + 770, y: gStar - 46, w: 26, h: 26, got: false, anim: 0 });
+    }
 
     x += w;
     i++;
@@ -413,6 +419,7 @@ var lives = CONFIG.startLives, invT = 0, deathX = 0;
 var holding = false, hintT = 4, tAll = 0, shake = 0;
 var startX = 70, cpReached = 0, winT = 0, doorOpen = 0;
 var deathsSinceCp = 0;
+var airJumps = 1, combo = 0, fxs = [], comboFx = { t: 0, n: 0 };
 
 function segAt(x){
   for (var i = 0; i < W2.segs.length; i++){
@@ -443,6 +450,7 @@ function reset(fromCp){
   if (!fromCp) { coinsGot = 0; cpReached = 0; startX = CONFIG.clampL; lives = CONFIG.startLives; deathsSinceCp = 0; }
   invT = 0;
   state = "play"; deadT = 0; winT = 0; doorOpen = 0; shake = 0;
+  airJumps = 1; combo = 0; fxs.length = 0; comboFx.t = 0;
   for (var ei = 0; ei < W2.enemies.length; ei++){
     var en0 = W2.enemies[ei];
     en0.dead = false; en0.x = en0.x0; en0.dir = -1;
@@ -471,6 +479,16 @@ function jump(){
     player.ground = false; player.plat = null;
     hintT = 0; holdT = 0;
     holding = true;
+    SFX.jump();
+  } else if (airJumps > 0){
+    /* 二段跳：空中还能再蹬一下，比第一下矮一点，落点更好控 */
+    airJumps--;
+    player.vy = CONFIG.jump * 0.84;
+    player.plat = null;
+    holdT = 0;
+    holding = true;
+    combo = 0;
+    fxs.push({ x: player.x + player.w / 2, y: player.y + player.h, t: 0 });
     SFX.jump();
   }
 }
@@ -638,6 +656,11 @@ function update(dt){
     }
   }
 
+  /* 落地（地面或平台）就把二段跳和连踩重置 */
+  if (player.ground || (player.plat && player.vy === 0)){ airJumps = 1; combo = 0; }
+  for (var fi = fxs.length - 1; fi >= 0; fi--){ fxs[fi].t += dt; if (fxs[fi].t > 0.4) fxs.splice(fi, 1); }
+  if (comboFx.t > 0) comboFx.t -= dt;
+
   var camTarget = player.x - W * 0.36;
   if (camTarget < 0) camTarget = 0;
   if (camTarget > W2.end - W * 0.5) camTarget = W2.end - W * 0.5;
@@ -711,7 +734,12 @@ function update(dt){
       if (invT > 0){
         en.dead = true; coinsGot++; SFX.stomp();
       } else if (player.vy > 40 && prevBottom <= en.y + 34){
-        en.dead = true; player.vy = -560; coinsGot++; SFX.stomp();
+        en.dead = true;
+        combo++;
+        player.vy = -560 - Math.min(combo - 1, 4) * 55;
+        airJumps = 1;
+        comboFx.t = 0.75; comboFx.n = combo;
+        coinsGot++; SFX.stomp();
       } else {
         return die();
       }
@@ -1264,11 +1292,36 @@ function drawPlayer(){
 }
 
 /* 开头操作提示：画在世界里，跟着相机走，不悬浮在屏幕正中 */
+function drawFxs(){
+  for (var i = 0; i < fxs.length; i++){
+    var f0 = fxs[i], k = f0.t / 0.4;
+    ctx.beginPath();
+    ctx.arc(f0.x - camX, f0.y, 7 + k * 26, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(255,238,180," + (1 - k).toFixed(3) + ")";
+    ctx.lineWidth = 2.6 * (1 - k) + 0.8;
+    ctx.stroke();
+  }
+  if (comboFx.t > 0 && combo > 1){
+    var a2 = Math.min(1, comboFx.t / 0.35);
+    ctx.save();
+    ctx.globalAlpha = a2;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    ctx.font = "bold 18px -apple-system,'PingFang SC',sans-serif";
+    var tx = player.x + player.w / 2 - camX, ty = player.y - 26;
+    ctx.lineWidth = 3.5; ctx.strokeStyle = "rgba(90,50,30,.5)";
+    ctx.strokeText("连踩 x" + combo, tx, ty);
+    ctx.fillStyle = "#fff2b8";
+    ctx.fillText("连踩 x" + combo, tx, ty);
+    ctx.restore();
+  }
+}
+
 function drawWorldHint(){
   if (hintT <= 0 || state !== "play") return;
   var a = Math.min(1, hintT);
   var hx = player.x - camX + 34, hy = player.y - 54;
-  var ww = 172, hh = 34;
+  var ww = 216, hh = 34;
   ctx.save();
   ctx.globalAlpha = a;
   ctx.fillStyle = "rgba(20,24,40,.82)";
@@ -1279,7 +1332,7 @@ function drawWorldHint(){
   ctx.fillStyle = "#ffeacb";
   ctx.font = "bold 15px -apple-system,'PingFang SC',sans-serif";
   ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  ctx.fillText("← → 走    ↑ 跳", hx, hy + 1);
+  ctx.fillText("← → 走    ↑ 跳 ×2", hx, hy + 1);
   ctx.restore();
 }
 
@@ -1400,6 +1453,7 @@ function render(){
   drawSpikes();
   drawFloor();
   drawPlayer();
+  drawFxs();
   drawWorldHint();
   ctx.restore();
   drawHUD();
