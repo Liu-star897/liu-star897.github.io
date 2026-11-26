@@ -984,25 +984,26 @@ var CONFIG = {
   var hallParked = null;
   function hallDuck(){
     var a = document.getElementById("hallBgm");
-    if (!a || a.paused || hallParked) return;
-    hallParked = { v: a.volume };
+    if (!a || hallParked) return;
+    hallParked = { v: a.volume, was: !a.paused };
+    try { console.log("[hall] duck was=" + hallParked.was); } catch (e) {}
     hallRampTo(0, 420);
     setTimeout(function(){
-      if (hallParked){ try { a.pause(); } catch (e) {} }
+      if (hallParked && hallParked.was){ try { a.pause(); } catch (e) {} }
     }, 470);
-    try { console.log("[hall] duck"); } catch (e) {}
   }
   function hallUnduck(){
     var a = document.getElementById("hallBgm");
     if (!hallParked || !a) return;
-    var v = hallParked.v;
+    var park = hallParked;
     hallParked = null;
+    try { console.log("[hall] unduck was=" + park.was); } catch (e) {}
+    if (!park.was) return;
     try { a.volume = 0; } catch (e) {}
-    var go = function(){ hallRampTo(v, 900); };
+    var go = function(){ hallRampTo(park.v, 900); };
     var p = null;
     try { p = a.play(); } catch (e) {}
     if (p && p.then) p.then(go).catch(function(){}); else go();
-    try { console.log("[hall] unduck"); } catch (e) {}
   }
 
   /* 小游戏会 postMessage 告诉我们它开始/停止放音乐 */
