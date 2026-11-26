@@ -739,6 +739,7 @@ function update(dt){
         player.vy = -560 - Math.min(combo - 1, 4) * 55;
         airJumps = 1;
         comboFx.t = 0.75; comboFx.n = combo;
+        shake = Math.max(shake, 0.22);
         coinsGot++; SFX.stomp();
       } else {
         return die();
