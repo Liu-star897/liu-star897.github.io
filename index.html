@@ -984,7 +984,6 @@ var CONFIG = {
   var hallParked = null;
   function hallDuck(){
     var a = document.getElementById("hallBgm");
-    try { console.log("[hall] duck req paused=" + (a ? a.paused : "noel") + " parked=" + !!hallParked); } catch (e) {}
     if (!a || a.paused || hallParked) return;
     hallParked = { v: a.volume };
     hallRampTo(0, 420);
