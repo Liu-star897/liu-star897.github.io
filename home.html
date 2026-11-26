@@ -174,9 +174,17 @@
     (function(a){
       a.addEventListener("click", function(e){
         e.preventDefault();
-        document.getElementById("fade").classList.add("on");
+        var href = a.getAttribute("href");
+        var fade = document.getElementById("fade");
+        fade.classList.add("on");
         if (!inFrame && typeof ramp === "function") ramp(0, 260);
-        setTimeout(function(){ location.href = a.getAttribute("href"); }, 380);
+        setTimeout(function(){ location.href = href; }, 380);
+        /* 兜底：万一这次跳转被浏览器掐掉（偶发 ERR_ABORTED），别把人晾在全黑里 */
+        setTimeout(function(){
+          if (document.getElementById("fade") && document.getElementById("fade").classList.contains("on")){
+            location.href = href;
+          }
+        }, 2600);
       });
     })(links[i]);
   }
