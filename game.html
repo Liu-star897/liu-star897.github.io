@@ -71,8 +71,8 @@
     <div class="card">
       <b>奖 励</b>
       <p>一份小游戏：《植物大战僵尸》中文版<br>带回家慢慢玩</p>
-      <button class="dl" id="dlBtn" type="button">下载 · 解压就能玩</button>
-      <span class="sz" id="dlNote">32 MB · 解压后双击 StartGame.bat</span>
+      <a class="dl" id="dlBtn" href="dl/PvZ-CN.zip" download="植物大战僵尸中文版.zip">下载 · 解压就能玩</a>
+      <span class="sz" id="dlNote">32 MB · 存到浏览器的「下载」文件夹</span>
     </div>
     <span class="again">点空白处或按 ↑，再跑一遍</span>
   </div>
@@ -808,7 +808,7 @@ function update(dt){
     if (overlap(player.x, player.y, player.w, player.h, item.x - 13, item.y - 13, 26, 26)){
       item.got = true;
       if (item.type === "life"){ lives = Math.min(5, lives + 1); SFX.life(); }
-      else { invT = 8; SFX.star(); }
+      else { invT = 8; SFX.star(); coinsGot++; }
     }
   }
 
@@ -1383,7 +1383,9 @@ function drawHUD(){
   ctx.font = "bold 20px Menlo,Consolas,monospace";
   ctx.textBaseline = "top"; ctx.textAlign = "left";
   ctx.fillStyle = "#fff";
-  ctx.fillText("YOU GOT: " + coinsGot, 24, 21);
+  var starGot = 0;
+  for (var ci = 0; ci < W2.coins.length; ci++) if (W2.coins[ci].got) starGot++;
+  ctx.fillText("★ " + starGot + " / " + W2.coins.length, 24, 21);
   ctx.font = "17px -apple-system,'PingFang SC',sans-serif";
   var heartN = Math.max(1, lives);
   for (var hi = 0; hi < heartN; hi++){
@@ -1445,7 +1447,9 @@ function syncReward(){
   var on = (state === "win" && winT > 1.4);
   var shown = rwEl.classList.contains("on");
   if (on && !shown){
-    if (rwStars) rwStars.textContent = coinsGot;
+    var got = 0;
+    for (var i = 0; i < W2.coins.length; i++) if (W2.coins[i].got) got++;
+    if (rwStars) rwStars.textContent = got;
     if (rwTotal) rwTotal.textContent = W2.coins.length;
     rwEl.classList.add("on");
     if (padsEl) padsEl.classList.add("hide");
@@ -1455,63 +1459,13 @@ function syncReward(){
   }
 }
 
-/* 奖励下载：仓库单请求放不下 32MB，文件被切成 3 段，这里依次取回、拼成一个 zip 再交给浏览器 */
+/* 奖励下载：直接指到站点根目录那个 zip，浏览器自己存进「下载」文件夹 */
 var dlBtn = document.getElementById("dlBtn");
 var dlNote = document.getElementById("dlNote");
-var DL_PARTS = ["dl/pvz.part1?v=1", "dl/pvz.part2?v=1", "dl/pvz.part3?v=1", "dl/pvz.part4?v=1"];
-var DL_TOTAL = 34012443;
-var dlBusy = false;
 if (dlBtn) dlBtn.addEventListener("click", function(ev){
-  ev.preventDefault();
+  /* 别让点击冒泡到游戏画布的"点一下重跑" */
   ev.stopPropagation();
-  if (dlBusy) return;
-  dlBusy = true;
-  dlBtn.disabled = true;
-  var bufs = [], i = 0;
-  function fail(e){
-    dlBusy = false;
-    dlBtn.disabled = false;
-    if (dlNote) dlNote.textContent = "没下全，再点一下重试";
-    console.log("[dl] fail", e);
-  }
-  function finish(){
-    var total = 0, sizes = [];
-    for (var k = 0; k < bufs.length; k++) { total += bufs[k].byteLength; sizes.push(bufs[k].byteLength); }
-    console.log("[dl] parts", sizes.length, sizes.join(","), "total", total);
-    if (total !== DL_TOTAL){
-      if (dlNote) dlNote.textContent = "文件不完整（" + total + " 字节），再点一下重试";
-      dlBusy = false;
-      dlBtn.disabled = false;
-      console.log("[dl] size mismatch, expected", DL_TOTAL);
-      return;
-    }
-    var blob = new Blob(bufs, { type: "application/zip" });
-    bufs = [];
-    var u = URL.createObjectURL(blob);
-    var a = document.createElement("a");
-    a.href = u;
-    a.download = "植物大战僵尸中文版.zip";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(function(){ URL.revokeObjectURL(u); }, 120000);
-    if (dlNote) dlNote.textContent = "已下载 · 解压后双击 StartGame.bat";
-    dlBusy = false;
-    dlBtn.disabled = false;
-    console.log("[dl] done");
-  }
-  function step(){
-    if (i >= DL_PARTS.length) { finish(); return; }
-    if (dlNote) dlNote.textContent = "正在打包 " + (i + 1) + " / " + DL_PARTS.length + " …";
-    fetch(DL_PARTS[i])
-      .then(function(r){
-        if (!r.ok) throw new Error("HTTP " + r.status);
-        return r.arrayBuffer();
-      })
-      .then(function(b){ bufs.push(b); i++; step(); })
-      .catch(fail);
-  }
-  step();
+  if (dlNote) dlNote.textContent = "已开始下载 · 到「下载」文件夹里找 植物大战僵尸中文版.zip";
 });
 
 function roundRect(x, y, w, h, r){
