@@ -23,7 +23,8 @@
         transition:opacity .25s,color .25s,background .2s}
   .mbtn:active{background:rgba(240,220,180,.16)}
   .mbtn.off{opacity:.4}
-  #pads{position:absolute;inset:0;pointer-events:none;z-index:5}
+  #pads{position:absolute;inset:0;pointer-events:none;z-index:5;transition:opacity .3s}
+  #pads.hide{opacity:0;pointer-events:none}
   .pad{position:absolute;bottom:5%;width:clamp(54px,8.4vh,74px);height:clamp(54px,8.4vh,74px);
        display:flex;flex-direction:column;align-items:center;justify-content:center;
        font-size:21px;line-height:1;color:#fff6e6;
@@ -37,6 +38,25 @@
   .pad.l{left:3.5%}
   .pad.r{left:calc(3.5% + clamp(54px,8.4vh,74px) + 12px)}
   .pad.j{right:4.5%;width:clamp(62px,9.6vh,84px);height:clamp(62px,9.6vh,84px);border-radius:50%}
+  /* ---------- 通关奖励卡片 ---------- */
+  #reward{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.97);
+          width:min(76%,392px);text-align:center;z-index:7;opacity:0;pointer-events:none;
+          transition:opacity .35s,transform .35s}
+  #reward.on{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+  #reward h2{margin:0;font-size:clamp(21px,4.2vh,33px);color:#7a5a3a;letter-spacing:.16em;font-weight:700}
+  #reward .stars{margin:9px 0 16px;font-size:clamp(11px,1.7vh,14px);color:#9a7a58}
+  #reward .card{padding:16px 16px 14px;border-radius:16px;background:rgba(255,255,255,.95);
+                border:1.5px solid #f0c987;box-shadow:0 14px 34px rgba(90,60,30,.16)}
+  #reward .card b{display:block;font-size:clamp(14px,2vh,18px);color:#e09a4e;letter-spacing:.12em}
+  #reward .card p{margin:8px 0 13px;font-size:clamp(11px,1.65vh,13.5px);color:#a9886a;line-height:1.55}
+  #reward .dl{display:inline-block;padding:11px 22px;border-radius:999px;border:0;font-family:inherit;cursor:pointer;
+               background:linear-gradient(180deg,#f5b673,#e8944a);color:#fff;text-decoration:none;
+               font-size:clamp(12px,1.8vh,14.5px);letter-spacing:.05em;
+               box-shadow:0 5px 14px rgba(224,140,60,.32);transition:transform .08s}
+  #reward .dl:active{transform:translateY(1px)}
+  #reward .dl[disabled]{opacity:.65;cursor:default}
+  #reward .sz{display:block;margin-top:9px;font-size:10.5px;color:#c0a68e;line-height:1.5}
+  #reward .again{display:block;margin-top:14px;font-size:11.5px;color:rgba(120,90,60,.6)}
 </style>
 </head>
 <body>
@@ -45,6 +65,17 @@
   <button class="mbtn" id="mbtn" title="点一下关掉音乐">♪</button>
   <audio id="gameBgm" src="bgm/fangcaodi.mp3?v=2" loop preload="auto" playsinline></audio>
   <canvas id="cv"></canvas>
+  <div id="reward">
+    <h2>你 到 了</h2>
+    <div class="stars">一路收下 <span id="rwStars">0</span> / <span id="rwTotal">0</span> 颗星</div>
+    <div class="card">
+      <b>奖 励</b>
+      <p>一份小游戏：《植物大战僵尸》中文版<br>带回家慢慢玩</p>
+      <button class="dl" id="dlBtn" type="button">下载 · 解压就能玩</button>
+      <span class="sz" id="dlNote">32 MB · 解压后双击 StartGame.bat</span>
+    </div>
+    <span class="again">点空白处或按 ↑，再跑一遍</span>
+  </div>
   <div id="pads">
     <div class="pad l" data-k="left">←<i>走</i></div>
     <div class="pad r" data-k="right">→<i>走</i></div>
@@ -1396,44 +1427,92 @@ function drawHUD(){
   }
 }
 
+/* 通关界面：画面上只铺一层暖白薄纱，文字和奖励卡片交给 HTML 浮层（能点、能下载） */
 function drawWin(){
   if (state !== "win") return;
   var a = Math.min(1, Math.max(0, (winT - 1.3) / 0.8));
   if (a <= 0) return;
   ctx.fillStyle = "rgba(255,250,240," + a + ")";
   ctx.fillRect(0, 0, W, H);
-  ctx.globalAlpha = a;
-  ctx.textAlign = "center";
-
-  ctx.fillStyle = "#7a5a3a";
-  ctx.font = "bold 38px -apple-system,'PingFang SC',sans-serif";
-  ctx.fillText("你 到 了", W / 2, H / 2 - 52);
-
-  ctx.fillStyle = "#9a7a58";
-  ctx.font = "16px -apple-system,'PingFang SC',sans-serif";
-  ctx.fillText("一路收下 " + coinsGot + " / " + W2.coins.length + " 颗星", W / 2, H / 2 - 8);
-
-  var cw = 340, ch = 120, cx = W / 2 - cw / 2, cy = H / 2 + 24;
-  ctx.fillStyle = "#fff";
-  ctx.strokeStyle = "#f0c987";
-  ctx.lineWidth = 2;
-  roundRect(cx, cy, cw, ch, 14); ctx.fill(); ctx.stroke();
-
-  ctx.fillStyle = "#f0a85c";
-  ctx.font = "bold 22px -apple-system,'PingFang SC',sans-serif";
-  ctx.fillText(LEVEL.rewardTitle, W / 2, cy + 44);
-
-  ctx.fillStyle = "#b08a68";
-  ctx.font = "14px -apple-system,'PingFang SC',sans-serif";
-  ctx.fillText(LEVEL.rewardText, W / 2, cy + 78);
-
-  if (winT > 1.5){
-    ctx.fillStyle = "rgba(120,90,60,.7)";
-    ctx.font = "13px -apple-system,'PingFang SC',sans-serif";
-    ctx.fillText("点 一 下 再 跑 一 遍", W / 2, H - 40);
-  }
-  ctx.globalAlpha = 1;
 }
+
+var rwEl = document.getElementById("reward");
+var padsEl = document.getElementById("pads");
+var rwStars = document.getElementById("rwStars");
+var rwTotal = document.getElementById("rwTotal");
+function syncReward(){
+  if (!rwEl) return;
+  var on = (state === "win" && winT > 1.4);
+  var shown = rwEl.classList.contains("on");
+  if (on && !shown){
+    if (rwStars) rwStars.textContent = coinsGot;
+    if (rwTotal) rwTotal.textContent = W2.coins.length;
+    rwEl.classList.add("on");
+    if (padsEl) padsEl.classList.add("hide");
+  } else if (!on && shown){
+    rwEl.classList.remove("on");
+    if (padsEl) padsEl.classList.remove("hide");
+  }
+}
+
+/* 奖励下载：仓库单请求放不下 32MB，文件被切成 3 段，这里依次取回、拼成一个 zip 再交给浏览器 */
+var dlBtn = document.getElementById("dlBtn");
+var dlNote = document.getElementById("dlNote");
+var DL_PARTS = ["dl/pvz.part1?v=1", "dl/pvz.part2?v=1", "dl/pvz.part3?v=1", "dl/pvz.part4?v=1"];
+var DL_TOTAL = 34012443;
+var dlBusy = false;
+if (dlBtn) dlBtn.addEventListener("click", function(ev){
+  ev.preventDefault();
+  ev.stopPropagation();
+  if (dlBusy) return;
+  dlBusy = true;
+  dlBtn.disabled = true;
+  var bufs = [], i = 0;
+  function fail(e){
+    dlBusy = false;
+    dlBtn.disabled = false;
+    if (dlNote) dlNote.textContent = "没下全，再点一下重试";
+    console.log("[dl] fail", e);
+  }
+  function finish(){
+    var total = 0, sizes = [];
+    for (var k = 0; k < bufs.length; k++) { total += bufs[k].byteLength; sizes.push(bufs[k].byteLength); }
+    console.log("[dl] parts", sizes.length, sizes.join(","), "total", total);
+    if (total !== DL_TOTAL){
+      if (dlNote) dlNote.textContent = "文件不完整（" + total + " 字节），再点一下重试";
+      dlBusy = false;
+      dlBtn.disabled = false;
+      console.log("[dl] size mismatch, expected", DL_TOTAL);
+      return;
+    }
+    var blob = new Blob(bufs, { type: "application/zip" });
+    bufs = [];
+    var u = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = u;
+    a.download = "植物大战僵尸中文版.zip";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(u); }, 120000);
+    if (dlNote) dlNote.textContent = "已下载 · 解压后双击 StartGame.bat";
+    dlBusy = false;
+    dlBtn.disabled = false;
+    console.log("[dl] done");
+  }
+  function step(){
+    if (i >= DL_PARTS.length) { finish(); return; }
+    if (dlNote) dlNote.textContent = "正在打包 " + (i + 1) + " / " + DL_PARTS.length + " …";
+    fetch(DL_PARTS[i])
+      .then(function(r){
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.arrayBuffer();
+      })
+      .then(function(b){ bufs.push(b); i++; step(); })
+      .catch(fail);
+  }
+  step();
+});
 
 function roundRect(x, y, w, h, r){
   ctx.beginPath();
@@ -1477,6 +1556,7 @@ function loop(ts){
   last = ts;
   update(dt);
   render();
+  syncReward();
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
