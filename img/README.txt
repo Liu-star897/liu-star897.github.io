@@ -21,6 +21,15 @@ cake.png  中间那个三层蛋糕
 放进来就自动替换掉代码画的那个粉色小人。
 （想直接用 Unity 工程里的 sprite，导出成 PNG 就行。）
 
+=== 还有这些（可选，见 ../ART-PROMPTS.md 里的完整提示词）===
+player.png    主角（小游戏里的小人）
+mob-walk.png  红蘑菇 · 普通巡逻
+mob-hop.png   橙蘑菇 · 跳跳菇
+mob-armor.png 铁蘑菇 · 要踩两下
+mob-fly.png   紫蘑菇 · 悬空飞行
+cloud.png     云台
+bg-game.jpg   游戏整张背景（16:9）
+
 === ceiling.png（可选）===
 「星星小游戏」里低天花板那一段的岩顶贴图。
 - 只要求：**横向能无缝平铺**（左边缘和右边缘接得上），高度 40–120px 都行
