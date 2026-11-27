@@ -1484,7 +1484,7 @@ function drawEnemies(){
       ctx.save();
       ctx.translate(x + en.w / 2 + swing, y + en.h);
       ctx.scale(en.dir < 0 ? -1 : 1, 1);
-      ctx.drawImage(mi, -en.w * 0.82, -en.h * 1.42, en.w * 1.64, en.h * 1.64);
+      ctx.drawImage(mi, -en.w * 0.95, -en.h * 1.62, en.w * 1.9, en.h * 1.9);
       ctx.restore();
       ctx.restore();
       continue;
@@ -1712,7 +1712,9 @@ function drawPlayer(){
   var flash = invT > 0 && Math.floor(tAll * 14) % 2 === 0;
   if (flash) ctx.globalAlpha = 0.6;
   if (hasPlayerImg){
-    ctx.drawImage(playerImg, x - 2, y - 4, player.w + 4, player.h + 4);
+    /* 立绘按身高撑高一点：脚底对齐 y + player.h，头顶多出一截也不会穿地 */
+    var ph2 = player.h + 26, pw2 = ph2 * (playerImg.width / playerImg.height);
+    ctx.drawImage(playerImg, x + player.w / 2 - pw2 / 2, y + player.h - ph2, pw2, ph2);
     ctx.globalAlpha = 1;
     return;
   }
