@@ -1051,7 +1051,7 @@ function drawParallax(img, factor, yOffset, heightRatio){
 
 function bg(){
   /* 三层视差：天空最慢、远山次之、云最靠前（云在 drawPlats 里另画） */
-  var drewSky = drawParallax(bgSkyImg, 0.06, -camY * 0.06 - 18, 1.06);
+  var drewSky = drawParallax(bgSkyImg, 0.06, -camY * 0.06 - 18, 1.42);
 
   var g = ctx.createLinearGradient(0, 0, 0, H);
   g.addColorStop(0, "#b7e4a6");
