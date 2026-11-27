@@ -134,10 +134,11 @@ playerImg.src = "img/player.png";
 
 /* ---------- 生成整条路：由一块块有高差的地形拼起来 ---------- */
 function genWorld(){
-  var O = { segs: [], spikes: [], gears: [], plats: [], coins: [], cps: [], enemies: [], items: [], seas: [], end: LEN, endY: FLOOR };
+  var O = { segs: [], spikes: [], gears: [], plats: [], coins: [], cps: [], enemies: [], items: [], seas: [],
+            ceil: [], hangs: [], airs: [], end: LEN, endY: FLOOR };
   var x = 0, y = FLOOR, i = 1;
   var lastT = -1;
-  var POOL = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 12, 13, 12, 14, 12];
+  var POOL = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 12, 13, 12, 14, 12, 15, 16];
 
   function clampY(v){ return Math.max(FLOOR - 132, Math.min(FLOOR + 58, v)); }
 
@@ -350,6 +351,30 @@ function genWorld(){
       y = clampY(yt - 130);
       cn(x + 790, y - 150);
       cn(x + 850, y - 150);
+
+    } else if (t === 15){
+      /* 低天花板：头顶压着一排刺，二段跳会直接撞上去——这段只能贴地走 */
+      w = 1000;
+      sg(x, x + w, y);
+      /* 刺尖离地 195：单跳（头顶最高约 167）刚好过，二段跳（约 245）必撞 */
+      O.ceil.push({ x0: x + 160, x1: x + w - 160, y: y - 195 });
+      O.spikes.push({ x: x + 420, n: 2 });
+      O.spikes.push({ x: x + 760, n: 2 });
+      foe(x + 300, y, 60);
+      arc(x + 200, 3, 90, y);
+      cn(x + 640, y - 60);
+
+    } else if (t === 16){
+      /* 空中陷阱带：地面能站，半空悬浮着来回横扫的齿轮，专治无脑二段跳 */
+      w = 1100;
+      sg(x, x + w, y);
+      O.airs.push({ x0: x + 260, x1: x + w - 220, y: y - 118, r: 16, sp: 1.15, ph: i * 1.7 });
+      O.airs.push({ x0: x + 380, x1: x + w - 300, y: y - 196, r: 13, sp: 0.85, ph: i * 2.3 + 1.1 });
+      O.gears.push({ x: x + 560, y: y - 34, r: 18, span: 0, sp: 0, ph: i });
+      O.spikes.push({ x: x + 860, n: 2 });
+      cn(x + 300, y - 74);
+      cn(x + 720, y - 74);
+      cn(x + 720, y - 152);
 
     } else {
       /* 平地带刺 + 怪，两者错开 */
@@ -579,6 +604,11 @@ function overlap(ax, ay, aw, ah, bx, by, bw, bh){
 }
 function platRect(p, t){ return { x: p.x + Math.sin(t * p.sp + p.ph) * p.span, y: p.y, w: p.w, h: 16 }; }
 function gearPos(g, t){ return { x: g.x + Math.sin(t * g.sp + g.ph) * g.span, y: g.y, r: g.r }; }
+/* 空中横扫的齿轮：在 x0..x1 之间来回，位置由时间算出来，画和判定共用 */
+function airPos(a, t){
+  var k = (Math.sin(t * a.sp + a.ph) + 1) / 2;
+  return { x: a.x0 + (a.x1 - a.x0) * k, y: a.y, r: a.r };
+}
 
 function die(){
   if (invT > 0) return;
@@ -735,6 +765,24 @@ function update(dt){
     if (sy === null) sy = FLOOR;
     if (overlap(player.x + 5, player.y + 7, player.w - 10, player.h - 7,
                 sp.x, sy - 18, 18 * sp.n, 18)) return die();
+  }
+
+  /* 低天花板：头顶的刺区。二段跳撞上去就是死，逼你贴地走 */
+  for (var ce = 0; ce < W2.ceil.length; ce++){
+    var cr = W2.ceil[ce];
+    if (cr.x1 < camX - 120 || cr.x0 > camX + W + 120) continue;
+    if (overlap(player.x + 4, player.y + 2, player.w - 8, player.h - 4,
+                cr.x0, cr.y, cr.x1 - cr.x0, 16)) return die();
+  }
+
+  /* 空中陷阱：半空来回扫的齿轮 */
+  for (var ai = 0; ai < W2.airs.length; ai++){
+    var ar = W2.airs[ai];
+    if (ar.x1 < camX - 220 || ar.x0 > camX + W + 220) continue;
+    var ap = airPos(ar, tAll);
+    var pcx = player.x + player.w / 2, pcy = player.y + player.h / 2;
+    var adx = pcx - ap.x, ady = pcy - ap.y, arr = ap.r + 12;
+    if (adx * adx + ady * ady < arr * arr) return die();
   }
 
   /* 齿轮 */
@@ -932,6 +980,67 @@ function drawSpikes(){
       ctx.moveTo(x + 9, sy - 20); ctx.lineTo(x + 9, sy - 6);
       ctx.strokeStyle = "rgba(255,255,255,.9)"; ctx.lineWidth = 2; ctx.stroke();
     }
+  }
+}
+
+/* 低天花板：一整条压下来的刺，倒挂在头顶 */
+function drawCeil(){
+  for (var i = 0; i < W2.ceil.length; i++){
+    var cr = W2.ceil[i];
+    var x0 = cr.x0 - camX, x1 = cr.x1 - camX;
+    if (x1 < -120 || x0 > W + 120) continue;
+    /* 灰石条 */
+    ctx.fillStyle = "#5d6478";
+    ctx.fillRect(x0, cr.y - 24, x1 - x0, 10);
+    ctx.fillStyle = "#454b5c";
+    ctx.fillRect(x0, cr.y - 14, x1 - x0, 5);
+    /* 朝下的刺：尖端落到 cr.y + 2 */
+    for (var x = x0 + 6; x < x1 - 12; x += 22){
+      ctx.beginPath();
+      ctx.moveTo(x, cr.y - 14);
+      ctx.lineTo(x + 11, cr.y + 2);
+      ctx.lineTo(x + 22, cr.y - 14);
+      ctx.closePath();
+      ctx.fillStyle = "#e2e6f2"; ctx.fill();
+      ctx.lineWidth = 1.4; ctx.strokeStyle = "#8f95ab"; ctx.stroke();
+    }
+  }
+}
+
+/* 空中横扫的齿轮，带一条虚线的轨道提示 */
+function drawAirs(){
+  for (var i = 0; i < W2.airs.length; i++){
+    var ar = W2.airs[i];
+    var ap = airPos(ar, tAll);
+    var x = ap.x - camX;
+    if (x < -160 || x > W + 160) continue;
+    ctx.save();
+    ctx.setLineDash([5, 7]);
+    ctx.strokeStyle = "rgba(150,160,190,.34)";
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(ar.x0 - camX, ar.y);
+    ctx.lineTo(ar.x1 - camX, ar.y);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(x, ap.y);
+    ctx.rotate(tAll * 2.1 + i);
+    ctx.fillStyle = "#a8aec2";
+    ctx.beginPath();
+    for (var k = 0; k < 8; k++){
+      var ang = k * Math.PI / 4;
+      var rr = k % 2 === 0 ? ap.r : ap.r * 0.62;
+      var px = Math.cos(ang) * rr, py = Math.sin(ang) * rr;
+      if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#7c8398";
+    ctx.beginPath(); ctx.arc(0, 0, ap.r * 0.34, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,.55)"; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.arc(0, 0, ap.r * 0.62, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
   }
 }
 
@@ -1491,6 +1600,8 @@ function render(){
   drawSea();
   drawPlats();
   drawGears();
+  drawAirs();
+  drawCeil();
   drawItems();
   drawEnemies();
   drawSpikes();
