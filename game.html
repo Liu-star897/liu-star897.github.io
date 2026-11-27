@@ -122,7 +122,9 @@ function fit(){
   cv.width = Math.round(W * dpr);
   cv.height = Math.round(H * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.imageSmoothingEnabled = false;
+  /* 立绘是缩小的，开平滑才不会碎成马赛克 */
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
 }
 fit();
 window.addEventListener("resize", fit);
