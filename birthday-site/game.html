@@ -1458,7 +1458,8 @@ function syncReward(){
 /* 奖励下载：仓库单请求放不下 32MB，文件被切成 3 段，这里依次取回、拼成一个 zip 再交给浏览器 */
 var dlBtn = document.getElementById("dlBtn");
 var dlNote = document.getElementById("dlNote");
-var DL_PARTS = ["dl/pvz.part1", "dl/pvz.part2", "dl/pvz.part3", "dl/pvz.part4"];
+var DL_PARTS = ["dl/pvz.part1?v=1", "dl/pvz.part2?v=1", "dl/pvz.part3?v=1", "dl/pvz.part4?v=1"];
+var DL_TOTAL = 34012443;
 var dlBusy = false;
 if (dlBtn) dlBtn.addEventListener("click", function(ev){
   ev.preventDefault();
@@ -1474,6 +1475,16 @@ if (dlBtn) dlBtn.addEventListener("click", function(ev){
     console.log("[dl] fail", e);
   }
   function finish(){
+    var total = 0, sizes = [];
+    for (var k = 0; k < bufs.length; k++) { total += bufs[k].byteLength; sizes.push(bufs[k].byteLength); }
+    console.log("[dl] parts", sizes.length, sizes.join(","), "total", total);
+    if (total !== DL_TOTAL){
+      if (dlNote) dlNote.textContent = "文件不完整（" + total + " 字节），再点一下重试";
+      dlBusy = false;
+      dlBtn.disabled = false;
+      console.log("[dl] size mismatch, expected", DL_TOTAL);
+      return;
+    }
     var blob = new Blob(bufs, { type: "application/zip" });
     bufs = [];
     var u = URL.createObjectURL(blob);
@@ -1492,7 +1503,7 @@ if (dlBtn) dlBtn.addEventListener("click", function(ev){
   function step(){
     if (i >= DL_PARTS.length) { finish(); return; }
     if (dlNote) dlNote.textContent = "正在打包 " + (i + 1) + " / " + DL_PARTS.length + " …";
-    fetch(DL_PARTS[i], { cache: "force-cache" })
+    fetch(DL_PARTS[i])
       .then(function(r){
         if (!r.ok) throw new Error("HTTP " + r.status);
         return r.arrayBuffer();
