@@ -139,6 +139,23 @@ var hasCeilImg = false;
 ceilImg.onload = function(){ hasCeilImg = true; };
 ceilImg.src = "img/ceiling.png";
 
+/* ---------- 贴图槽位：文件放进去就自动替换掉代码画的版本 ---------- */
+function slot(src){
+  var im = new Image();
+  im.ok = false;
+  im.onload = function(){ im.ok = true; };
+  im.src = src;
+  return im;
+}
+var bgImg    = slot("img/bg-game.jpg");   /* 游戏整张背景 */
+var cloudImg = slot("img/cloud.png");     /* 云台（横向拉伸到平台宽度） */
+var mobImgs = {
+  walk:  slot("img/mob-walk.png"),        /* 红蘑菇：普通巡逻 */
+  hop:   slot("img/mob-hop.png"),         /* 橙蘑菇：跳跳菇 */
+  armor: slot("img/mob-armor.png"),       /* 铁蘑菇：要踩两下 */
+  fly:   slot("img/mob-fly.png")          /* 紫蘑菇：飞行 */
+};
+
 /* ---------- 生成整条路：由一块块有高差的地形拼起来 ---------- */
 function genWorld(){
   var O = { segs: [], spikes: [], gears: [], plats: [], coins: [], cps: [], enemies: [], items: [], seas: [],
@@ -1014,6 +1031,16 @@ function update(dt){
 
 /* ---------- 画面 ---------- */
 function bg(){
+  if (bgImg.ok && bgImg.width){
+    /* 整张背景图铺满：跟着镜头做一点点视差，别死板 */
+    var iw = bgImg.width, ih = bgImg.height;
+    var scale = Math.max(W / iw, H / ih);
+    var dw = iw * scale, dh = ih * scale;
+    var ox = (dw - W) * Math.min(1, Math.max(0, (camX / Math.max(1, W2.end)) * 1.6));
+    var oy = -camY * 0.35 + (dh - H) * 0.45;
+    ctx.drawImage(bgImg, -ox, oy, dw, dh);
+    return;
+  }
   var g = ctx.createLinearGradient(0, 0, 0, H);
   g.addColorStop(0, "#b7e4a6");
   g.addColorStop(0.46, "#d6d5ea");
@@ -1271,6 +1298,13 @@ function drawPlats(){
     if (x < -240 || x > W + 240) continue;
 
     if (p.kind === "cloud"){
+      /* 有 img/cloud.png 就用贴图：横向拉伸到平台宽度，底部对齐站立面 */
+      if (cloudImg.ok && cloudImg.width){
+        var ch2 = cloudImg.height * (pr.w / cloudImg.width);
+        if (ch2 > 96) ch2 = 96;
+        ctx.drawImage(cloudImg, x - 6, pr.y + 8 - ch2, pr.w + 12, ch2);
+        continue;
+      }
       /* 天空云台：白软云朵，底下悬空 */
       ctx.fillStyle = "rgba(255,255,255,.97)";
       ctx.beginPath();
@@ -1433,6 +1467,28 @@ function drawEnemies(){
     ctx.translate(x + en.w / 2, y + en.h);
     ctx.scale(1.18, 1.18);
     ctx.translate(-(x + en.w / 2), -(y + en.h));
+    /* 有对应贴图就直接画图，没有就退回代码画的那只 */
+    var mi = mobImgs[en.kind] || mobImgs.walk;
+    if (mi && mi.ok && mi.width){
+      if (en.dead){
+        ctx.save();
+        ctx.globalAlpha = 0.45;
+        ctx.translate(x + en.w / 2, y + en.h - 4);
+        ctx.scale(1.15, 0.42);
+        ctx.drawImage(mi, -en.w * 0.7, -en.h * 0.45, en.w * 1.4, en.h * 0.9);
+        ctx.restore();
+        ctx.restore();
+        continue;
+      }
+      var swing = en.kind === "hop" ? 0 : Math.sin(en.t * 9) * 1.5;
+      ctx.save();
+      ctx.translate(x + en.w / 2 + swing, y + en.h);
+      ctx.scale(en.dir < 0 ? -1 : 1, 1);
+      ctx.drawImage(mi, -en.w * 0.82, -en.h * 1.42, en.w * 1.64, en.h * 1.64);
+      ctx.restore();
+      ctx.restore();
+      continue;
+    }
     if (en.dead){
       ctx.fillStyle = "#8a5334";
       ctx.beginPath();
