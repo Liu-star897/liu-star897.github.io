@@ -132,6 +132,13 @@ var hasPlayerImg = false;
 playerImg.onload = function(){ hasPlayerImg = true; };
 playerImg.src = "img/player.png";
 
+/* 天花板贴图：往 img/ceiling.png 里放一张图就会自动替换掉代码画的那套
+   （宽度会被横向平铺，高度按 40px 算） */
+var ceilImg = new Image();
+var hasCeilImg = false;
+ceilImg.onload = function(){ hasCeilImg = true; };
+ceilImg.src = "img/ceiling.png";
+
 /* ---------- 生成整条路：由一块块有高差的地形拼起来 ---------- */
 function genWorld(){
   var O = { segs: [], spikes: [], gears: [], plats: [], coins: [], cps: [], enemies: [], items: [], seas: [],
@@ -402,18 +409,18 @@ function genWorld(){
       foe(x + 300, y, 90);
       foe(x + 900, y, 70, "hop");
       arc(x + 120, 3, 80, y);
-      /* 上层木栈道：两段，中间留个缺口要跳 */
-      var my = y - 132;
-      O.plats.push({ x: x + 260, y: my, w: 420, span: 0, sp: 0, ph: 0, kind: "wood" });
-      O.plats.push({ x: x + 760, y: my, w: 360, span: 0, sp: 0, ph: 0, kind: "wood" });
-      cn(x + 330, my - 46); cn(x + 470, my - 46); cn(x + 610, my - 46);
+      /* 上层木栈道：架得更高一些，两段中间留缺口要跳。
+         实测单跳脚底升 121、二段跳升 205 —— 栈道定在 170：
+         单跳够不着，必须二段跳才上得去，正好把二段跳做成"上楼"的工具 */
+      var my = y - 170;
+      O.plats.push({ x: x + 200, y: my, w: 440, span: 0, sp: 0, ph: 0, kind: "wood" });
+      O.plats.push({ x: x + 760, y: my, w: 380, span: 0, sp: 0, ph: 0, kind: "wood" });
+      cn(x + 280, my - 46); cn(x + 420, my - 46); cn(x + 560, my - 46);
       cn(x + 840, my - 46); cn(x + 980, my - 46);
-      /* 栈道上的怪（固定在木板上） */
-      O.enemies.push({ x: x + 560, x0: x + 300, x1: x + 640,
+      /* 栈道上的怪：放在右边那一段巡逻，别守在起跳点上（不然一跳上去就顶到它） */
+      O.enemies.push({ x: x + 900, x0: x + 790, x1: x + 1100,
                        y: my - 28, w: 28, h: 28, dir: -1, dead: false,
                        kind: "walk", t: 0, vy: 0, fixedY: my - 28 });
-      /* 上的去的坡：左脚这边垫一个小台，跳一下能踩上栈道 */
-      O.plats.push({ x: x + 120, y: y - 66, w: 110, span: 0, sp: 0, ph: 0, kind: "wood" });
 
     } else {
       /* 平地带刺 + 怪，两者错开 */
@@ -425,19 +432,47 @@ function genWorld(){
       arc(x + 80, 5, 86, y);
     }
 
-    /* 稀疏地放加命蘑菇和星星：只放在真有地面的地方，别挂在天空/海面上 */
-    if (i % 8 === 3){
-      var gLife = segYat(x + 720);
-      if (gLife !== null) O.items.push({ type: "life", x: x + 720, y: gLife - 28, w: 26, h: 26, got: false, anim: 0 });
+    /* 稀疏地放加命蘑菇 / 星星 / 护盾：既要真有地面，也不能压在刺或齿轮上。
+       道具卡在陷阱里等于白给，还容易被当成陷阱的一部分。 */
+    function itemSafe(cx){
+      if (segYat(cx) === null) return false;
+      var pad = 56;
+      for (var si = 0; si < O.spikes.length; si++){
+        var sp0 = O.spikes[si];
+        if (cx + pad > sp0.x && cx - pad < sp0.x + sp0.n * 18) return false;
+      }
+      for (var gi = 0; gi < O.gears.length; gi++){
+        var gz = O.gears[gi];
+        if (Math.abs(cx - gz.x) < gz.span + 52) return false;
+      }
+      for (var ai = 0; ai < O.airs.length; ai++){
+        var ar0 = O.airs[ai];
+        if (cx + pad > ar0.x0 && cx - pad < ar0.x1) return false;
+      }
+      for (var ci = 0; ci < O.ceil.length; ci++){
+        var ce0 = O.ceil[ci];
+        if (cx + pad > ce0.x0 && cx - pad < ce0.x1) return false;
+      }
+      for (var fi = 0; fi < O.enemies.length; fi++){
+        var en0 = O.enemies[fi];
+        if (Math.abs(cx - (en0.x0 + en0.x1) / 2) < (en0.x1 - en0.x0) / 2 + 50) return false;
+      }
+      return true;
     }
-    if (i % 11 === 6){
-      var gStar = segYat(x + 770);
-      if (gStar !== null) O.items.push({ type: "star", x: x + 770, y: gStar - 46, w: 26, h: 26, got: false, anim: 0 });
+    function putItem(kind, want, lift){
+      /* 从想要的位置往两边找最近的安全点，最多试 6 个偏移 */
+      var offs = [0, 70, -70, 140, -140, 210, -210];
+      for (var oi = 0; oi < offs.length; oi++){
+        var cx = x + want + offs[oi];
+        if (!itemSafe(cx)) continue;
+        var gy0 = segYat(cx);
+        O.items.push({ type: kind, x: cx, y: gy0 - lift, w: 26, h: 26, got: false, anim: 0 });
+        return;
+      }
     }
-    if (i % 9 === 5){
-      var gSh = segYat(x + 640);
-      if (gSh !== null) O.items.push({ type: "shield", x: x + 640, y: gSh - 34, w: 26, h: 26, got: false, anim: 0 });
-    }
+    if (i % 8 === 3) putItem("life", 720, 28);
+    if (i % 11 === 6) putItem("star", 770, 46);
+    if (i % 9 === 5) putItem("shield", 640, 34);
 
     x += w;
     i++;
@@ -1084,39 +1119,42 @@ function drawCeil(){
     var cr = W2.ceil[i];
     var x0 = cr.x0 - camX, x1 = cr.x1 - camX;
     if (x1 < -120 || x0 > W + 120) continue;
-    /* 石梁：从画面上沿压下来一整块，看着像洞顶 */
+    /* 主体：从画面上沿压下来的一块岩顶。
+       有 img/ceiling.png 就平铺贴图，没有就用一层低调的深灰兜底——
+       先别画花纹，等你给贴图，这样换图的时候不用再改结构。 */
     var topY = -camY - 40;
-    var rockG = ctx.createLinearGradient(0, topY, 0, cr.y - 10);
-    rockG.addColorStop(0, "#3c4254");
-    rockG.addColorStop(0.7, "#4d5468");
-    rockG.addColorStop(1, "#5d6478");
-    ctx.fillStyle = rockG;
-    ctx.fillRect(x0, topY, x1 - x0, cr.y - 10 - topY);
+    var bodyH = cr.y - 14 - topY;
+    if (hasCeilImg && ceilImg.width){
+      var pat = ctx.createPattern(ceilImg, "repeat-x");
+      if (pat){
+        ctx.save();
+        ctx.translate(0, 0);
+        ctx.fillStyle = pat;
+        ctx.fillRect(x0, topY, x1 - x0, bodyH);
+        ctx.restore();
+      } else {
+        ctx.fillStyle = "#4a5062";
+        ctx.fillRect(x0, topY, x1 - x0, bodyH);
+      }
+    } else {
+      var rockG = ctx.createLinearGradient(0, topY, 0, cr.y - 14);
+      rockG.addColorStop(0, "#3f4557");
+      rockG.addColorStop(1, "#535a6e");
+      ctx.fillStyle = rockG;
+      ctx.fillRect(x0, topY, x1 - x0, bodyH);
+    }
 
-    /* 砖缝 */
-    ctx.strokeStyle = "rgba(20,24,34,.35)"; ctx.lineWidth = 1;
-    for (var by = topY; by < cr.y - 14; by += 16){
-      ctx.beginPath(); ctx.moveTo(x0, by); ctx.lineTo(x1, by); ctx.stroke();
-    }
-    for (var bx = x0; bx < x1; bx += 34){
-      ctx.beginPath(); ctx.moveTo(bx, topY); ctx.lineTo(bx, cr.y - 14); ctx.stroke();
-    }
-    /* 顶沿苔藓，让边缘不那么死板 */
-    ctx.fillStyle = "rgba(96,132,92,.55)";
-    for (var mx = x0; mx < x1; mx += 26){
-      var mh = 4 + (Math.sin(mx * 0.07) + 1) * 3;
-      ctx.beginPath();
-      ctx.ellipse(mx + 13, cr.y - 11, 15, mh, 0, 0, 7);
-      ctx.fill();
-    }
-    /* 梁底阴影：往下方晕一层暗，显得厚 */
-    var shG = ctx.createLinearGradient(0, cr.y - 12, 0, cr.y + 16);
-    shG.addColorStop(0, "rgba(20,24,34,.34)");
+    /* 底边一道暗线，把岩顶和空气分开，不至于糊成一片 */
+    ctx.fillStyle = "rgba(24,28,38,.55)";
+    ctx.fillRect(x0, cr.y - 18, x1 - x0, 4);
+    /* 梁底阴影 */
+    var shG = ctx.createLinearGradient(0, cr.y - 14, 0, cr.y + 18);
+    shG.addColorStop(0, "rgba(20,24,34,.3)");
     shG.addColorStop(1, "rgba(20,24,34,0)");
     ctx.fillStyle = shG;
-    ctx.fillRect(x0, cr.y - 12, x1 - x0, 28);
+    ctx.fillRect(x0, cr.y - 14, x1 - x0, 32);
 
-    /* 朝下的刺：冰蓝色，尖端落到 cr.y + 2 */
+    /* 朝下的刺：冰蓝色，尖端落到 cr.y + 2（这层保留，撞的就是它） */
     for (var x = x0 + 6; x < x1 - 12; x += 22){
       var sG = ctx.createLinearGradient(x, cr.y - 14, x + 11, cr.y + 2);
       sG.addColorStop(0, "#cfd8ea");
@@ -1128,7 +1166,6 @@ function drawCeil(){
       ctx.closePath();
       ctx.fillStyle = sG; ctx.fill();
       ctx.lineWidth = 1.2; ctx.strokeStyle = "rgba(90,105,135,.75)"; ctx.stroke();
-      /* 高光 */
       ctx.beginPath();
       ctx.moveTo(x + 9.5, cr.y - 11);
       ctx.lineTo(x + 11, cr.y - 1);
