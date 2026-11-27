@@ -138,7 +138,7 @@ function genWorld(){
             ceil: [], hangs: [], airs: [], end: LEN, endY: FLOOR };
   var x = 0, y = FLOOR, i = 1;
   var lastT = -1;
-  var POOL = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 12, 13, 12, 14, 12, 15, 16];
+  var POOL = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 15, 16, 16];
 
   function clampY(v){ return Math.max(FLOOR - 132, Math.min(FLOOR + 58, v)); }
 
@@ -176,12 +176,24 @@ function genWorld(){
       cn(x0 + k * gap, yy - 42 - Math.sin(t * Math.PI) * 46);
     }
   }
-  function foe(cx, gy, half){
+  /* kind: "walk" 普通 | "hop" 跳跳菇 | "armor" 铁头菇(踩不死) | "fly" 飞行菇(悬空) */
+  function foe(cx, gy, half, kind){
     var h = half || 110;
     /* 用脚下真实地面兜底：敌人有时候被放在斜坡上，别让它一开始就陷进土里 */
     var gl = segYat(cx + 14);
     if (gl !== null) gy = gl;
-    O.enemies.push({ x: cx, x0: cx - h, x1: cx + h, y: gy - 28, w: 28, h: 28, dir: -1, dead: false });
+    var k = kind || "walk";
+    var e = { x: cx, x0: cx - h, x1: cx + h, y: gy - 28, w: 28, h: 28,
+              dir: -1, dead: false, kind: k, t: Math.random() * 2, vy: 0 };
+    if (k === "fly"){
+      /* 飞行菇：悬在地面上方 92，上下轻轻起伏 */
+      e.flyBase = gy - 120;
+      e.y = e.flyBase;
+      e.flyAmp = 14;
+      e.fixedY = e.flyBase;
+    }
+    if (k === "armor") e.w = 30, e.h = 30;
+    O.enemies.push(e);
   }
   function item(kind, cx, gy, lift){
     O.items.push({ type: kind, x: cx, y: gy - lift, w: 36, h: 26, got: false, anim: 0 });
@@ -203,7 +215,7 @@ function genWorld(){
       sg(x, x + w, y);
       arc(x + 110, 5, 86, y);
       foe(x + 520, y);
-      foe(x + 790, y);
+      foe(x + 790, y, 90, "hop");
 
     } else if (t === 1){
       /* 三级上台阶 */
@@ -245,6 +257,7 @@ function genWorld(){
       O.gears.push({ x: x + 300, y: y - 34, r: 20, span: 0, sp: 0, ph: 0 });
       O.gears.push({ x: x + 470, y: y - 34, r: 17, span: 80, sp: 0.9, ph: i });
       O.spikes.push({ x: x + 700, n: 2 });
+      foe(x + 560, y, 70, "fly");
       arc(x + 100, 3, 80, y);
 
     } else if (t === 5){
@@ -264,7 +277,7 @@ function genWorld(){
       sg(r1, x + 800, yv);
       var r2 = ramp(x + 800, x + w, yv, y);
       foe(x + 430, yv, 100);
-      foe(x + 640, yv, 80);
+      foe(x + 640, yv, 80, "armor");
       for (var v = 0; v < 5; v++) cn(x + 300 + v * 80, yv - 48);
 
     } else if (t === 7){
@@ -360,7 +373,7 @@ function genWorld(){
       O.ceil.push({ x0: x + 160, x1: x + w - 160, y: y - 195 });
       O.spikes.push({ x: x + 420, n: 2 });
       O.spikes.push({ x: x + 760, n: 2 });
-      foe(x + 300, y, 60);
+      foe(x + 300, y, 60, "armor");
       arc(x + 200, 3, 90, y);
       cn(x + 640, y - 60);
 
@@ -371,6 +384,7 @@ function genWorld(){
       O.airs.push({ x0: x + 260, x1: x + w - 220, y: y - 118, r: 16, sp: 1.15, ph: i * 1.7 });
       O.airs.push({ x0: x + 380, x1: x + w - 300, y: y - 196, r: 13, sp: 0.85, ph: i * 2.3 + 1.1 });
       O.gears.push({ x: x + 560, y: y - 34, r: 18, span: 0, sp: 0, ph: i });
+      foe(x + 980, y, 70, "hop");
       O.spikes.push({ x: x + 860, n: 2 });
       cn(x + 300, y - 74);
       cn(x + 720, y - 74);
@@ -381,7 +395,7 @@ function genWorld(){
       w = 920;
       sg(x, x + w, y);
       O.spikes.push({ x: x + 280, n: 4 });
-      foe(x + 640, y);
+      foe(x + 640, y, 110, (i % 3 === 0) ? "fly" : "walk");
       O.spikes.push({ x: x + 760, n: 2 });
       arc(x + 80, 5, 86, y);
     }
@@ -519,7 +533,9 @@ function reset(fromCp){
   for (var ei = 0; ei < W2.enemies.length; ei++){
     var en0 = W2.enemies[ei];
     en0.dead = false; en0.x = en0.x0; en0.dir = -1;
-    if (en0.fixedY == null){
+    if (en0.kind === "fly"){
+      en0.y = en0.flyBase; en0.t = 0;
+    } else if (en0.fixedY == null){
       var gy0e = groundYAt(en0.x + en0.w / 2);
       if (gy0e !== null) en0.y = gy0e - en0.h;
     }
@@ -800,11 +816,27 @@ function update(dt){
     var en = W2.enemies[en2];
     if (en.dead) continue;
     if (en.x < camX - 320 || en.x > camX + W + 320) continue;
-    en.x += en.dir * 58 * dt;
+    en.t += dt;
+    var spd = en.kind === "hop" ? 42 : (en.kind === "fly" ? 74 : (en.kind === "armor" ? 44 : 58));
+    en.x += en.dir * spd * dt;
     if (en.x < en.x0){ en.x = en.x0; en.dir = 1; }
     if (en.x > en.x1){ en.x = en.x1; en.dir = -1; }
+
+    if (en.kind === "fly"){
+      /* 飞行菇：悬在空中上下飘，不贴地面 */
+      en.y = en.flyBase + Math.sin(en.t * 2.2) * en.flyAmp;
+    } else if (en.kind === "hop"){
+      /* 跳跳菇：在地上一下一下蹦，落点贴地 */
+      var gyH = groundYAt(en.x + en.w / 2);
+      if (gyH !== null){
+        var phase = (en.t * 1.9) % 1;
+        var lift = Math.sin(phase * Math.PI) * 46;
+        en.y = gyH - en.h - lift;
+      }
+      if (en.x <= en.x0 + 1 || en.x >= en.x1 - 1) en.dir = -en.dir;
+    }
     /* 怪贴着脚下的地面走：不悬空、也不会陷进台阶里；前面是墙或断崖就掉头 */
-    if (en.fixedY == null){
+    if (en.fixedY == null && en.kind !== "hop"){
       var gyE = groundYAt(en.x + en.w / 2);
       if (gyE === null){
         en.dir = -en.dir; en.x += en.dir * 2;
@@ -822,6 +854,15 @@ function update(dt){
       if (invT > 0){
         en.dead = true; coinsGot++; SFX.stomp();
       } else if (player.vy > 40 && prevBottom <= en.y + 34){
+        if (en.kind === "armor"){
+          /* 铁头菇：踩上去只是被弹开，踩不死——得绕开或者用连踩的弹力跨过去 */
+          player.vy = -470;
+          airJumps = 1;
+          SFX.stomp();
+          shake = Math.max(shake, 0.16);
+          hitEn = false;
+          break;
+        }
         en.dead = true;
         combo++;
         player.vy = -560 - Math.min(combo - 1, 4) * 55;
@@ -1247,16 +1288,49 @@ function drawEnemies(){
       ctx.restore();
       continue;
     }
+    /* 腿 */
     ctx.fillStyle = "#6f4327";
     ctx.fillRect(x + 6, y + 22, 6, 7);
     ctx.fillRect(x + 16, y + 22, 6, 7);
-    ctx.fillStyle = "#c8574b";
+
+    /* 菌盖：按种类换色 */
+    var capC = "#c8574b", rimC = "#9c3f37";
+    if (en.kind === "hop"){ capC = "#e0913c"; rimC = "#b06a20"; }
+    else if (en.kind === "armor"){ capC = "#7d8aa6"; rimC = "#4c576d"; }
+    else if (en.kind === "fly"){ capC = "#8f6bd6"; rimC = "#654a9e"; }
+
+    if (en.kind === "fly"){
+      /* 翅膀 */
+      var wing = Math.sin(en.t * 18) * 0.5 + 0.5;
+      ctx.fillStyle = "rgba(235,225,255,.85)";
+      ctx.beginPath();
+      ctx.ellipse(x + 2, y + 10, 8, 5 + wing * 3, -0.5, 0, 7); ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(x + 26, y + 10, 8, 5 + wing * 3, 0.5, 0, 7); ctx.fill();
+    }
+
+    ctx.fillStyle = capC;
     ctx.beginPath();
     ctx.moveTo(x - 1, y + 22);
     ctx.quadraticCurveTo(x + 14, y - 5, x + 29, y + 22);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = "#9c3f37"; ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.strokeStyle = rimC; ctx.lineWidth = 1.4; ctx.stroke();
+
+    /* 铁头菇的钢盔压条 */
+    if (en.kind === "armor"){
+      ctx.fillStyle = "rgba(226,234,248,.9)";
+      ctx.fillRect(x + 2, y + 6, 24, 3.4);
+      ctx.fillStyle = "rgba(60,70,90,.5)";
+      ctx.fillRect(x + 11, y - 2, 6, 9);
+    }
+    /* 跳跳菇的环形斑 */
+    if (en.kind === "hop"){
+      ctx.fillStyle = "rgba(255,238,206,.85)";
+      ctx.beginPath(); ctx.ellipse(x + 8, y + 12, 3.4, 2.6, 0, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(x + 20, y + 11, 2.8, 2.2, 0, 0, 7); ctx.fill();
+    }
+
     ctx.fillStyle = "#fff1de";
     ctx.beginPath(); ctx.arc(x + 9, y + 12, 3.4, 0, 7); ctx.fill();
     ctx.beginPath(); ctx.arc(x + 20, y + 14, 2.8, 0, 7); ctx.fill();
