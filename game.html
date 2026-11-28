@@ -1297,17 +1297,25 @@ function drawCeil(){
     var topY = -camY - 240;
     var bodyH = cr.y - 14 - topY;
     if (hasCeilImg && ceilImg.width){
-      var pat = ctx.createPattern(ceilImg, "repeat-x");
-      if (pat){
-        ctx.save();
-        ctx.translate(0, 0);
-        ctx.fillStyle = pat;
-        ctx.fillRect(x0, topY, x1 - x0, bodyH);
-        ctx.restore();
-      } else {
-        ctx.fillStyle = "#4a5062";
-        ctx.fillRect(x0, topY, x1 - x0, bodyH);
+      /* 贴图：等比缩到身体高度，再按【世界坐标】横向平铺。
+         不能按屏幕坐标铺——那样贴图会跟着镜头一起滑，像贴在玻璃上。 */
+      var cs = bodyH / ceilImg.height;
+      var dw = ceilImg.width * cs;
+      var startX = Math.floor(cr.x0 / dw) * dw;
+      ctx.save();
+      ctx.beginPath();
+      /* 左右两端各收一段斜坡：贴图是方的一张，直接截断会变成一块竖着切开的板 */
+      var tp = 90;
+      ctx.moveTo(x0 - tp, topY);
+      ctx.lineTo(x1 + tp, topY);
+      ctx.lineTo(x1, cr.y - 14);
+      ctx.lineTo(x0, cr.y - 14);
+      ctx.closePath();
+      ctx.clip();
+      for (var tx2 = startX; tx2 < cr.x1 + 2; tx2 += dw){
+        ctx.drawImage(ceilImg, tx2 - camX, topY, dw, bodyH);
       }
+      ctx.restore();
     } else {
       /* 用夜空里的深紫岩色，别用灰——灰色在星空底上像一块贴错的白板 */
       /* 从画面顶部往下渐深转亮：上端压进夜色里，下沿才是石头的紫灰 */
