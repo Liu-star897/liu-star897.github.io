@@ -1127,27 +1127,8 @@ function bg(){
     fadeG.addColorStop(1, "rgba(10,16,34,.55)");
     ctx.fillStyle = fadeG;
     ctx.fillRect(0, H * 0.55, W, H * 0.45);
-    /* 地面以下压暗：坑和缝隙里是暗紫岩体，不是透出天空的蓝 */
-    /* 和远山同一族的紫，只是更深一点：不能压成近黑，否则和山断层 */
-    /* 和远山同一族的紫（山是 #4a3a70 左右），只再深两档，
-       不能压成近黑——那样和山之间会出现一条断层 */
-    /* 地下岩体兜底：从「画面里最高的那条地面」往下铺深紫。
-       所有地形随后会在自己上方重新盖住这块，只有真正的坑/缝露出来，
-       所以永远不会出现一条浮在天空上的黑边。 */
-    var topGround = null;
-    for (var gsi = 0; gsi < W2.segs.length; gsi++){
-      var gsg = W2.segs[gsi];
-      if (gsg.x1 < camX - 40 || gsg.x0 > camX + W + 40) continue;
-      var gsy = gsg.slope ? Math.min(gsg.y0, gsg.y) : gsg.y;
-      if (topGround === null || gsy < topGround) topGround = gsy;
-    }
-    if (topGround === null) topGround = FLOOR;
-    var dg2 = ctx.createLinearGradient(0, topGround - camY, 0, H);
-    dg2.addColorStop(0, "rgba(72,56,116,.96)");
-    dg2.addColorStop(0.4, "rgba(58,44,96,.99)");
-    dg2.addColorStop(1, "rgba(42,30,74,1)");
-    ctx.fillStyle = dg2;
-    ctx.fillRect(0, topGround - camY, W, H - (topGround - camY));
+    /* 地下岩体不在这里画：只在地形之间的"缺口"里补（见 drawFloor 的开头），
+       否则整块屏幕下半部都会被刷成紫色，把天空和云都盖住。 */
     return;
   }
 
@@ -1178,6 +1159,25 @@ function bg(){
 }
 
 function drawFloor(){
+  /* 先把地形之间的缺口（坑、断层）填成地下岩体。
+     只在缺口那一段填，不铺满全屏——铺满会把天空和云一起盖掉。 */
+  for (var pi = 0; pi + 1 < W2.segs.length; pi++){
+    var pa = W2.segs[pi], pb = W2.segs[pi + 1];
+    var gx0 = pa.x1, gx1 = pb.x0;
+    if (gx1 - gx0 < 8) continue;
+    var sx0 = gx0 - camX, sx1 = gx1 - camX;
+    if (sx1 < -40 || sx0 > W + 40) continue;
+    /* 缺口上沿取两侧地面里较低的那条（屏幕上更低 = y 更大） */
+    var pTop = Math.max(pa.y, pb.y);
+    var pBot = H - camY + 80;
+    var pg = ctx.createLinearGradient(0, pTop, 0, pTop + 140);
+    pg.addColorStop(0, "rgba(74,58,118,.92)");
+    pg.addColorStop(0.5, "rgba(56,42,94,.97)");
+    pg.addColorStop(1, "rgba(38,26,68,1)");
+    ctx.fillStyle = pg;
+    ctx.fillRect(sx0, pTop, sx1 - sx0, pBot - pTop);
+  }
+
   for (var i = 0; i < W2.segs.length; i++){
     var s = W2.segs[i];
     var x0 = s.x0 - camX, x1 = s.x1 - camX;
