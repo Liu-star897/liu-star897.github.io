@@ -1239,21 +1239,27 @@ function drawCeil(){
       }
     } else {
       /* 用夜空里的深紫岩色，别用灰——灰色在星空底上像一块贴错的白板 */
-      var rockG = ctx.createLinearGradient(0, topY, 0, cr.y - 6);
-      rockG.addColorStop(0, "#241a3c");
-      rockG.addColorStop(0.55, "#2e2249");
-      rockG.addColorStop(1, "#3a2b5c");
+      /* 从画面顶部往下渐深转亮：上端压进夜色里，下沿才是石头的紫灰 */
+      var rockG = ctx.createLinearGradient(0, camY, 0, cr.y - 6);
+      rockG.addColorStop(0, "#170f28");
+      rockG.addColorStop(0.45, "#241a3c");
+      rockG.addColorStop(0.80, "#33264f");
+      rockG.addColorStop(1, "#41305f");
       ctx.fillStyle = rockG;
       ctx.beginPath();
-      ctx.moveTo(x0, topY);
-      ctx.lineTo(x1, topY);
-      /* 下沿做成一排参差的岩齿，不要一条直线 */
+      /* 左右两端各收一段斜坡，岩体才不会像一块被刀切开的板 */
+      var taper = 60;
+      ctx.moveTo(x0 - taper, topY);
+      ctx.lineTo(x1 + taper, topY);
+      ctx.lineTo(x1 + taper, camY - 20);
       var step = 46;
-      for (var rx = x1; rx > x0; rx -= step){
+      for (var rx = x1 + taper; rx > x0 - taper; rx -= step){
+        var e = Math.min(1, Math.min(rx - (x0 - taper), (x1 + taper) - rx) / taper);
         var ph = (rx * 0.13 + i * 1.7);
         var droop = 8 + Math.sin(ph) * 6 + Math.sin(ph * 2.3) * 3;
-        ctx.lineTo(rx - step * 0.5, cr.y - 16 + droop);
-        ctx.lineTo(rx - step, cr.y - 16 - droop * 0.35);
+        var base = cr.y - 16 - (1 - e) * 70;
+        ctx.lineTo(rx - step * 0.5, base + droop);
+        ctx.lineTo(rx - step, base - droop * 0.35);
       }
       ctx.closePath();
       ctx.fill();
