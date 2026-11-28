@@ -17,7 +17,7 @@
        background-size:cover;background-position:center 42%;
        will-change:transform;transform:translateZ(0)}
   /* 山脊单独一层：横向拉满、底部贴住地面，用 background-repeat 循环 */
-  #ridge{position:absolute;left:0;right:0;bottom:22%;height:26%;z-index:0;
+  #ridge{position:absolute;left:0;right:0;bottom:6%;height:46%;z-index:0;
          background-image:url("img/bg-far.png?v=3");
          background-size:auto 100%;background-repeat:repeat-x;background-color:transparent;
          background-position:0 100%;
@@ -947,7 +947,8 @@ function update(dt){
     if (en.x < camX - 320 || en.x > camX + W + 320) continue;
     en.t += dt;
     if (en.hitT > 0) en.hitT = Math.max(0, en.hitT - dt);
-    var spd = en.kind === "hop" ? 42 : (en.kind === "fly" ? 74 : (en.kind === "armor" ? 44 : 58));
+    /* 跳跳菇和普通菇一样地走，只是边走边蹦 */
+    var spd = en.kind === "fly" ? 74 : 58;
     en.x += en.dir * spd * dt;
     if (en.x < en.x0){ en.x = en.x0; en.dir = 1; }
     if (en.x > en.x1){ en.x = en.x1; en.dir = -1; }
@@ -1107,12 +1108,16 @@ function bg(){
     ctx.fillStyle = fadeG;
     ctx.fillRect(0, H * 0.55, W, H * 0.45);
     /* 地面以下压暗：坑和缝隙里是暗紫岩体，不是透出天空的蓝 */
-    var dg2 = ctx.createLinearGradient(0, FLOOR - 66, 0, FLOOR + 70);
-    dg2.addColorStop(0, "rgba(30,18,44,0)");
-    dg2.addColorStop(0.42, "rgba(28,17,42,.78)");
-    dg2.addColorStop(1, "rgba(16,10,26,.96)");
+    /* 和远山同一族的紫，只是更深一点：不能压成近黑，否则和山断层 */
+    /* 和远山同一族的紫（山是 #4a3a70 左右），只再深两档，
+       不能压成近黑——那样和山之间会出现一条断层 */
+    var dg2 = ctx.createLinearGradient(0, FLOOR - 120, 0, FLOOR + 100);
+    dg2.addColorStop(0, "rgba(74,58,112,0)");
+    dg2.addColorStop(0.30, "rgba(70,54,108,.30)");
+    dg2.addColorStop(0.58, "rgba(60,46,96,.46)");
+    dg2.addColorStop(1, "rgba(46,34,76,.62)");
     ctx.fillStyle = dg2;
-    ctx.fillRect(0, FLOOR - 66, W, H - FLOOR + 66);
+    ctx.fillRect(0, FLOOR - 120, W, H - FLOOR + 120);
     return;
   }
 
@@ -1392,10 +1397,19 @@ function drawPlats(){
     if (p.kind === "cloud"){
       /* 有 img/cloud.png 就用贴图：横向拉伸到平台宽度，底部对齐站立面 */
       if (cloudImg.ok && cloudImg.width){
-        /* 云顶就是站立面 pr.y：贴图底边贴住 pr.y，踩上去才像站在云上 */
-        var ch2 = (pr.w + 16) * (cloudImg.height / cloudImg.width);
-        if (ch2 > 110) ch2 = 110;
-        ctx.drawImage(cloudImg, x - 8, pr.y - ch2, pr.w + 16, ch2);
+        /* 云顶就是站立面 pr.y，云身往“下”铺开——
+           这样人是站在云上面，而不是整只被云包住（云会挡视线、也会遮住怪） */
+        /* 云要“垫”在脚下：图顶比站立面高一截，人踩进去一点才像站在云上。
+           之前顶边正好压在 pr.y，云最蓬松的一圈在下面，看着人就浮在云上方了 */
+        var cw2 = pr.w + 24;
+        var ch2 = cw2 * (cloudImg.height / cloudImg.width);
+        if (ch2 > 78) ch2 = 78;
+        /* 云顶正好落在站立面：脚踩在云头上，云身往下蓬开。
+           不能把云顶抬到 pr.y 之上——那样会把脚和云上的怪一起盖住 */
+        /* 图的上沿有约 1/4 是羽化的淡边，视觉上的"云顶"要低一截；
+           所以整块往上提 22%，人踩上去才是踩在云头上。
+           怪不会被挡——drawEnemies 排在 drawPlats 之后 */
+        ctx.drawImage(cloudImg, x - 12, pr.y - ch2 * 0.256, cw2, ch2);
         continue;
       }
       /* 天空云台：白软云朵，底下悬空 */
@@ -1575,9 +1589,11 @@ function drawEnemies(){
       }
       var swing = en.kind === "hop" ? 0 : Math.sin(en.t * 9) * 1.5;
       ctx.save();
-      ctx.translate(x + en.w / 2 + swing, y + en.h);
+      /* 抬高 3px：斜坡上看着才是"站"着而不是陷进去 */
+      ctx.translate(x + en.w / 2 + swing, y + en.h - 3);
       ctx.scale(en.dir < 0 ? -1 : 1, 1);
-      ctx.drawImage(mi, -en.w * 0.95, -en.h * 1.62, en.w * 1.9, en.h * 1.9);
+      /* 贴图底边要压在脚底线上；之前底边比脚底低 0.28h，看着像陷进地里 */
+      ctx.drawImage(mi, -en.w * 0.95, -en.h * 1.9, en.w * 1.9, en.h * 1.9);
       ctx.restore();
       ctx.restore();
       continue;
@@ -2008,9 +2024,10 @@ function render(){
   drawAirs();
   drawCeil();
   drawItems();
-  drawEnemies();
   drawSpikes();
+  /* 先画地面、再画怪：否则坡道上的怪会被地面边缘切掉下半截 */
   drawFloor();
+  drawEnemies();
   drawPlayer();
   drawFxs();
   drawWorldHint();
