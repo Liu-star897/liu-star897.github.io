@@ -1165,6 +1165,12 @@ function drawFloor(){
     var pa = W2.segs[pi], pb = W2.segs[pi + 1];
     var gx0 = pa.x1, gx1 = pb.x0;
     if (gx1 - gx0 < 8) continue;
+    /* 河段：缺口里是水不是岩石。水在 drawSea 里已经画过，这里再填紫色就会把水盖掉 */
+    var wet = false;
+    for (var sw = 0; sw < W2.seas.length; sw++){
+      if (W2.seas[sw].x0 <= gx0 + 2 && W2.seas[sw].x1 >= gx1 - 2){ wet = true; break; }
+    }
+    if (wet) continue;
     var sx0 = gx0 - camX, sx1 = gx1 - camX;
     if (sx1 < -40 || sx0 > W + 40) continue;
     /* 缺口上沿取两侧地面里较低的那条（屏幕上更低 = y 更大） */
