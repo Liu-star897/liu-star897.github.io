@@ -874,9 +874,7 @@ function update(dt){
   camX += (camTarget - camX) * Math.min(1, dt * 9);
 
   /* CSS 图层跟着镜头轻微横移（天空几乎不动，山脊慢一点），全部交给 GPU */
-  if (skyEl){
-    skyEl.style.backgroundPosition = (-camX * 0.04).toFixed(1) + "px " + (-camY * 0.4).toFixed(1) + "px";
-  }
+  /* 天空保持 cover 不动：一动就会在边缘露出底色 */
   if (ridgeEl){
     if (!_ridgeW) _ridgeW = ridgeEl.offsetHeight * (2800 / 331);
     var roff = (camX * 0.16) % _ridgeW;
@@ -1108,7 +1106,13 @@ function bg(){
     fadeG.addColorStop(1, "rgba(10,16,34,.55)");
     ctx.fillStyle = fadeG;
     ctx.fillRect(0, H * 0.55, W, H * 0.45);
-    /* 山脊由 #ridge 图层画；这里只把地面附近压暗，接住地形 */
+    /* 地面以下压暗：坑和缝隙里是暗紫岩体，不是透出天空的蓝 */
+    var dg2 = ctx.createLinearGradient(0, FLOOR - 66, 0, FLOOR + 70);
+    dg2.addColorStop(0, "rgba(30,18,44,0)");
+    dg2.addColorStop(0.42, "rgba(28,17,42,.78)");
+    dg2.addColorStop(1, "rgba(16,10,26,.96)");
+    ctx.fillStyle = dg2;
+    ctx.fillRect(0, FLOOR - 66, W, H - FLOOR + 66);
     return;
   }
 
@@ -1213,7 +1217,8 @@ function drawCeil(){
     /* 主体：从画面上沿压下来的一块岩顶。
        有 img/ceiling.png 就平铺贴图，没有就用一层低调的深灰兜底——
        先别画花纹，等你给贴图，这样换图的时候不用再改结构。 */
-    var topY = -camY - 40;
+    /* 顶必须延伸到画面上沿之外，否则岩体会变成一块悬空的板 */
+    var topY = -camY - 240;
     var bodyH = cr.y - 14 - topY;
     if (hasCeilImg && ceilImg.width){
       var pat = ctx.createPattern(ceilImg, "repeat-x");
@@ -1228,16 +1233,39 @@ function drawCeil(){
         ctx.fillRect(x0, topY, x1 - x0, bodyH);
       }
     } else {
-      var rockG = ctx.createLinearGradient(0, topY, 0, cr.y - 14);
-      rockG.addColorStop(0, "#3f4557");
-      rockG.addColorStop(1, "#535a6e");
+      /* 用夜空里的深紫岩色，别用灰——灰色在星空底上像一块贴错的白板 */
+      var rockG = ctx.createLinearGradient(0, topY, 0, cr.y - 6);
+      rockG.addColorStop(0, "#241a3c");
+      rockG.addColorStop(0.55, "#2e2249");
+      rockG.addColorStop(1, "#3a2b5c");
       ctx.fillStyle = rockG;
-      ctx.fillRect(x0, topY, x1 - x0, bodyH);
+      ctx.beginPath();
+      ctx.moveTo(x0, topY);
+      ctx.lineTo(x1, topY);
+      /* 下沿做成一排参差的岩齿，不要一条直线 */
+      var step = 46;
+      for (var rx = x1; rx > x0; rx -= step){
+        var ph = (rx * 0.13 + i * 1.7);
+        var droop = 8 + Math.sin(ph) * 6 + Math.sin(ph * 2.3) * 3;
+        ctx.lineTo(rx - step * 0.5, cr.y - 16 + droop);
+        ctx.lineTo(rx - step, cr.y - 16 - droop * 0.35);
+      }
+      ctx.closePath();
+      ctx.fill();
+
+      /* 沿下沿点几块苔痕/星光，让它有质感 */
+      ctx.fillStyle = "rgba(150,170,230,.20)";
+      for (var gx2 = x0; gx2 < x1; gx2 += 62){
+        var gy2 = cr.y - 18 + Math.sin(gx2 * 0.11 + i) * 5;
+        ctx.beginPath();
+        ctx.ellipse(gx2, gy2, 15, 3.4, 0, 0, 7);
+        ctx.fill();
+      }
     }
 
     /* 底边一道暗线，把岩顶和空气分开，不至于糊成一片 */
-    ctx.fillStyle = "rgba(24,28,38,.55)";
-    ctx.fillRect(x0, cr.y - 18, x1 - x0, 4);
+    ctx.fillStyle = "rgba(16,10,28,.62)";
+    ctx.fillRect(x0, cr.y - 12, x1 - x0, 5);
     /* 梁底阴影 */
     var shG = ctx.createLinearGradient(0, cr.y - 14, 0, cr.y + 18);
     shG.addColorStop(0, "rgba(20,24,34,.3)");
@@ -1364,9 +1392,10 @@ function drawPlats(){
     if (p.kind === "cloud"){
       /* 有 img/cloud.png 就用贴图：横向拉伸到平台宽度，底部对齐站立面 */
       if (cloudImg.ok && cloudImg.width){
-        var ch2 = cloudImg.height * (pr.w / cloudImg.width);
-        if (ch2 > 96) ch2 = 96;
-        ctx.drawImage(cloudImg, x - 6, pr.y + 8 - ch2, pr.w + 12, ch2);
+        /* 云顶就是站立面 pr.y：贴图底边贴住 pr.y，踩上去才像站在云上 */
+        var ch2 = (pr.w + 16) * (cloudImg.height / cloudImg.width);
+        if (ch2 > 110) ch2 = 110;
+        ctx.drawImage(cloudImg, x - 8, pr.y - ch2, pr.w + 16, ch2);
         continue;
       }
       /* 天空云台：白软云朵，底下悬空 */
