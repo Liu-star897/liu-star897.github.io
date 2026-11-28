@@ -13,9 +13,17 @@
        background:#0a1020;overflow:hidden;box-shadow:0 0 70px rgba(0,0,0,.65)}
   /* 夜空交给 CSS 图层：由 GPU 合成，比每帧在 canvas 里贴一张大图便宜得多 */
   #sky{position:absolute;inset:0;z-index:0;
-       background-image:url("img/bg-sky.jpg");
-       background-size:cover;background-position:center 38%;
+       background-image:url("img/bg-sky.jpg?v=3");
+       background-size:cover;background-position:center 42%;
        will-change:transform;transform:translateZ(0)}
+  /* 山脊单独一层：横向拉满、底部贴住地面，用 background-repeat 循环 */
+  #ridge{position:absolute;left:0;right:0;bottom:22%;height:26%;z-index:0;
+         background-image:url("img/bg-far.png?v=3");
+         background-size:auto 100%;background-repeat:repeat-x;background-color:transparent;
+         background-position:0 100%;
+         will-change:transform;transform:translateZ(0);
+         -webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,0) 0%,#000 42%);
+                 mask-image:linear-gradient(to bottom,rgba(0,0,0,0) 0%,#000 42%)}
   canvas{display:block;width:100%;height:100%;touch-action:none}
   .back{position:absolute;right:2%;top:3.2%;font-size:13px;letter-spacing:.12em;color:#f0e2c8;
         text-decoration:none;padding:8px 15px;border:1px solid rgba(240,220,180,.28);
@@ -70,6 +78,7 @@
   <button class="mbtn" id="mbtn" title="点一下关掉音乐">♪</button>
   <audio id="gameBgm" src="bgm/fangcaodi.mp3?v=2" loop preload="auto" playsinline></audio>
   <div id="sky"></div>
+  <div id="ridge"></div>
   <canvas id="cv" style="position:relative;z-index:1"></canvas>
   <div id="reward">
     <h2>你 到 了</h2>
@@ -864,6 +873,16 @@ function update(dt){
   if (camTarget > W2.end - W * 0.5) camTarget = W2.end - W * 0.5;
   camX += (camTarget - camX) * Math.min(1, dt * 9);
 
+  /* CSS 图层跟着镜头轻微横移（天空几乎不动，山脊慢一点），全部交给 GPU */
+  if (skyEl){
+    skyEl.style.backgroundPosition = (-camX * 0.04).toFixed(1) + "px " + (-camY * 0.4).toFixed(1) + "px";
+  }
+  if (ridgeEl){
+    if (!_ridgeW) _ridgeW = ridgeEl.offsetHeight * (2800 / 331);
+    var roff = (camX * 0.16) % _ridgeW;
+    ridgeEl.style.backgroundPosition = (-roff).toFixed(1) + "px 100%";
+  }
+
   /* 竖向镜头：站得高（台阶顶、云台）时画面跟着抬一点，人别顶在画面上沿 */
   var anchorY = null;
   if (player.plat) anchorY = player.plat.y;
@@ -1055,6 +1074,8 @@ function layerCache(img, heightRatio){
   return { canvas: c, w: dw, h: dh };
 }
 var skyEl = document.getElementById("sky");
+var ridgeEl = document.getElementById("ridge");
+var _ridgeW = 0;   /* 山脊图缩放后的实际宽度，用于算循环偏移 */
 
 function drawParallax(cache, factor, yOffset){
   if (!cache) return false;
@@ -1087,7 +1108,7 @@ function bg(){
     fadeG.addColorStop(1, "rgba(10,16,34,.55)");
     ctx.fillStyle = fadeG;
     ctx.fillRect(0, H * 0.55, W, H * 0.45);
-    /* 远山已经烘进天空图里，这里什么都不用画（省掉一整层每帧贴图） */
+    /* 山脊由 #ridge 图层画；这里只把地面附近压暗，接住地形 */
     return;
   }
 
@@ -1937,6 +1958,12 @@ function roundRect(x, y, w, h, r){
 }
 
 function render(){
+  /* 先无条件清干净：天空交给 CSS 图层后，bg() 只铺了一层半透明渐变，
+     不清的话每帧都会叠在上一帧上，出现残影和拖尾 */
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  var dpr = Math.max(2, Math.min(window.devicePixelRatio || 1, 2));
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.save();
   if (shake > 0){
     ctx.translate((Math.random() - 0.5) * 10 * shake, (Math.random() - 0.5) * 10 * shake);
