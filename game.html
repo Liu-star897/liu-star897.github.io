@@ -178,6 +178,12 @@ function slot(src){
 }
 var bgSkyImg = slot("img/bg-sky.jpg");    /* 最远层：夜空 / 星月 */
 
+/* 三张环境贴图：放进去就自动替换掉代码画的渐变，没放就还走渐变（不会白屏）。
+   都会按【世界坐标】横向平铺，竖向按要填的高度拉伸。 */
+var ugImg = slot("img/underground.png?v=1");   /* 坑 / 地下剖面 */
+var waterImg = slot("img/water.png?v=1");      /* 河海面（图里只有水，从水面线往下） */
+var cloudSeaImg = slot("img/cloudsea.png?v=1"); /* 天空浮岛脚下的夜空云海 */
+
 var cloudImg = slot("img/cloud.png");     /* 云台（横向拉伸到平台宽度） */
 var mobImgs = {
   walk:  slot("img/mob-walk.png"),        /* 红蘑菇：普通巡逻 */
@@ -1197,20 +1203,37 @@ function drawFloor(){
       if (kx1 > -40 && kx0 < W + 40){
         var kTop = Math.max(pa.y, pb.y);
         var kBot = H - camY + 80;
-        var kg = ctx.createLinearGradient(0, kTop, 0, kTop + 340);
-        kg.addColorStop(0, "rgba(86,112,182,.30)");
-        kg.addColorStop(0.45, "rgba(46,66,124,.62)");
-        kg.addColorStop(1, "rgba(18,26,56,.92)");
         ctx.save();
         ctx.beginPath(); ctx.rect(kx0, kTop, kx1 - kx0, kBot - kTop); ctx.clip();
-        ctx.fillStyle = kg;
-        ctx.fillRect(kx0, kTop, kx1 - kx0, kBot - kTop);
-        for (var qb = 0; qb < 6; qb++){
-          var by = kTop + 26 + qb * 54 + Math.sin(tAll * 0.6 + qb * 1.7) * 5;
-          ctx.fillStyle = "rgba(186,208,250," + Math.max(0, 0.16 - qb * 0.022).toFixed(3) + ")";
-          ctx.beginPath();
-          ctx.ellipse(kx0 + (kx1 - kx0) * (0.14 + qb * 0.15), by, 210, 22 + qb * 3, 0, 0, 7);
-          ctx.fill();
+        if (cloudSeaImg.ok && cloudSeaImg.width){
+          /* 云海贴图：竖向拉满，横向按世界坐标平铺 */
+          var cH = kBot - kTop;
+          var cSc = cH / cloudSeaImg.height;
+          var cDw = cloudSeaImg.width * cSc;
+          var cSt = Math.floor(gx0 / cDw) * cDw;
+          for (var ci = cSt; ci < gx1; ci += cDw){
+            ctx.drawImage(cloudSeaImg, ci - camX, kTop, cDw, cH);
+          }
+          /* 上沿压一层夜色雾：贴图上边直接和夜空相接会拼出一条直边 */
+          var cg = ctx.createLinearGradient(0, kTop, 0, kTop + 90);
+          cg.addColorStop(0, "rgba(16,22,48,.85)");
+          cg.addColorStop(1, "rgba(16,22,48,0)");
+          ctx.fillStyle = cg;
+          ctx.fillRect(kx0, kTop, kx1 - kx0, 90);
+        } else {
+          var kg = ctx.createLinearGradient(0, kTop, 0, kTop + 340);
+          kg.addColorStop(0, "rgba(86,112,182,.30)");
+          kg.addColorStop(0.45, "rgba(46,66,124,.62)");
+          kg.addColorStop(1, "rgba(18,26,56,.92)");
+          ctx.fillStyle = kg;
+          ctx.fillRect(kx0, kTop, kx1 - kx0, kBot - kTop);
+          for (var qb = 0; qb < 6; qb++){
+            var by = kTop + 26 + qb * 54 + Math.sin(tAll * 0.6 + qb * 1.7) * 5;
+            ctx.fillStyle = "rgba(186,208,250," + Math.max(0, 0.16 - qb * 0.022).toFixed(3) + ")";
+            ctx.beginPath();
+            ctx.ellipse(kx0 + (kx1 - kx0) * (0.14 + qb * 0.15), by, 210, 22 + qb * 3, 0, 0, 7);
+            ctx.fill();
+          }
         }
         ctx.restore();
       }
@@ -1221,12 +1244,24 @@ function drawFloor(){
     /* 缺口上沿取两侧地面里较低的那条（屏幕上更低 = y 更大） */
     var pTop = Math.max(pa.y, pb.y);
     var pBot = H - camY + 80;
-    var pg = ctx.createLinearGradient(0, pTop, 0, pTop + 140);
-    pg.addColorStop(0, "rgba(74,58,118,.92)");
-    pg.addColorStop(0.5, "rgba(56,42,94,.97)");
-    pg.addColorStop(1, "rgba(38,26,68,1)");
-    ctx.fillStyle = pg;
-    ctx.fillRect(sx0, pTop, sx1 - sx0, pBot - pTop);
+    if (ugImg.ok && ugImg.width){
+      /* 地下剖面贴图：竖向拉满坑深，横向按世界坐标平铺。
+         图最上面那条暖色土层正好压在缺口上沿，看起来就是被挖开的断面 */
+      var pH = pBot - pTop;
+      var pSc = pH / ugImg.height;
+      var pDw = ugImg.width * pSc;
+      var pSt = Math.floor(gx0 / pDw) * pDw;
+      for (var pqi = pSt; pqi < gx1; pqi += pDw){
+        ctx.drawImage(ugImg, pqi - camX, pTop, pDw, pH);
+      }
+    } else {
+      var pg = ctx.createLinearGradient(0, pTop, 0, pTop + 140);
+      pg.addColorStop(0, "rgba(74,58,118,.92)");
+      pg.addColorStop(0.5, "rgba(56,42,94,.97)");
+      pg.addColorStop(1, "rgba(38,26,68,1)");
+      ctx.fillStyle = pg;
+      ctx.fillRect(sx0, pTop, sx1 - sx0, pBot - pTop);
+    }
   }
 
   for (var i = 0; i < W2.segs.length; i++){
@@ -1450,12 +1485,26 @@ function drawSea(){
     var wy = sea.wy;
     var yBot = H - camY + 80;
     /* 水面就是 wy：不再往上抬 8px，否则看着比岸还高 */
-    var g = ctx.createLinearGradient(0, wy, 0, yBot);
-    g.addColorStop(0, "rgba(96,168,232,.82)");
-    g.addColorStop(0.28, "rgba(46,104,180,.92)");
-    g.addColorStop(1, "rgba(14,36,82,.95)");
-    ctx.fillStyle = g;
-    ctx.fillRect(x0, wy, x1 - x0, yBot - wy);
+    if (waterImg.ok && waterImg.width){
+      /* 有水面贴图：竖向拉满水体，横向按世界坐标平铺（按屏幕坐标铺会跟着镜头滑） */
+      var wH = yBot - wy;
+      var wSc = wH / waterImg.height;
+      var wDw = waterImg.width * wSc;
+      var wSt = Math.floor(sea.x0 / wDw) * wDw;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(x0, wy, x1 - x0, wH); ctx.clip();
+      for (var wi = wSt; wi < sea.x1; wi += wDw){
+        ctx.drawImage(waterImg, wi - camX, wy, wDw, wH);
+      }
+      ctx.restore();
+    } else {
+      var g = ctx.createLinearGradient(0, wy, 0, yBot);
+      g.addColorStop(0, "rgba(96,168,232,.82)");
+      g.addColorStop(0.28, "rgba(46,104,180,.92)");
+      g.addColorStop(1, "rgba(14,36,82,.95)");
+      ctx.fillStyle = g;
+      ctx.fillRect(x0, wy, x1 - x0, yBot - wy);
+    }
     ctx.strokeStyle = "rgba(205,232,255,.55)";
     ctx.lineWidth = 2;
     for (var w2 = 0; w2 < 5; w2++){
