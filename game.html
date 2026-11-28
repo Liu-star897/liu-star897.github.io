@@ -538,7 +538,11 @@ function genWorld(){
         if (O.segs[s3].x1 > target){ pos = O.segs[s3].x0 + 140; hit = O.segs[s3]; break; }
       }
     }
-    if (hit) O.cps.push({ x: pos, y: hit.y });
+    /* 旗杆底要用 x 处的真实地面高度（斜坡上 hit.y 只是段首的值，会悬空） */
+    if (hit){
+      var cpy = segYat(pos);
+      O.cps.push({ x: pos, y: cpy === null ? hit.y : cpy });
+    }
   }
 
   return O;
@@ -805,7 +809,10 @@ function update(dt){
   if (input.right) vx += CONFIG.walk;
   if (input.left) vx -= CONFIG.walk;
   player.vx = vx;
-  if (vx !== 0) player.runT += dt;
+  if (vx !== 0){
+    player.runT += dt;
+    player.face = vx > 0 ? 1 : -1;   /* 往哪走就朝哪，向右是原始朝向 */
+  }
 
   var nx = player.x + vx * dt;
   if (nx < CONFIG.clampL) nx = CONFIG.clampL;
@@ -957,14 +964,27 @@ function update(dt){
       /* 飞行菇：悬在空中上下飘，不贴地面 */
       en.y = en.flyBase + Math.sin(en.t * 2.2) * en.flyAmp;
     } else if (en.kind === "hop"){
-      /* 跳跳菇：在地上一下一下蹦，落点贴地 */
+      /* 跳跳菇：边走边蹦，不是原地上下弹。
+         高度在"蹦起"和"贴地"之间来回；遇到台阶抬高一级、断崖就掉头 */
       var gyH = groundYAt(en.x + en.w / 2);
-      if (gyH !== null){
-        var phase = (en.t * 1.9) % 1;
-        var lift = Math.sin(phase * Math.PI) * 46;
-        en.y = gyH - en.h - lift;
+      if (gyH === null){
+        en.dir = -en.dir; en.x += en.dir * 3;
+      } else {
+        /* 前方路面高出一截（台阶/坡）→ 起跳更高一点，看着像跳过去 */
+        var fxh = en.dir > 0 ? en.x + en.w + 10 : en.x - 10;
+        var gyNh = groundYAt(fxh);
+        var stepUp = 0;
+        if (gyNh === null){ en.dir = -en.dir; en.x += en.dir * 3; }
+        else {
+          var dy = gyH - gyNh;
+          if (dy < -14) en.dir = -en.dir;      /* 前面是陡坎，掉头 */
+          else if (dy > 10) stepUp = Math.min(52, dy);  /* 前面是台阶，跳高些 */
+          var phase = (en.t * 1.55) % 1;
+          var lift = Math.sin(phase * Math.PI) * (46 + stepUp);
+          en.y = gyH - en.h - lift;
+        }
       }
-      if (en.x <= en.x0 + 1 || en.x >= en.x1 - 1) en.dir = -en.dir;
+      /* 边界由上面的统一钳制负责；这里再翻一次会和它打架，导致在原地来回抵消、一动不动 */
     }
     /* 怪贴着脚下的地面走：不悬空、也不会陷进台阶里；前面是墙或断崖就掉头 */
     if (en.fixedY == null && en.kind !== "hop"){
@@ -1111,13 +1131,23 @@ function bg(){
     /* 和远山同一族的紫，只是更深一点：不能压成近黑，否则和山断层 */
     /* 和远山同一族的紫（山是 #4a3a70 左右），只再深两档，
        不能压成近黑——那样和山之间会出现一条断层 */
-    var dg2 = ctx.createLinearGradient(0, FLOOR - 120, 0, FLOOR + 100);
-    dg2.addColorStop(0, "rgba(74,58,112,0)");
-    dg2.addColorStop(0.30, "rgba(70,54,108,.30)");
-    dg2.addColorStop(0.58, "rgba(60,46,96,.46)");
-    dg2.addColorStop(1, "rgba(46,34,76,.62)");
+    /* 地下岩体兜底：从「画面里最高的那条地面」往下铺深紫。
+       所有地形随后会在自己上方重新盖住这块，只有真正的坑/缝露出来，
+       所以永远不会出现一条浮在天空上的黑边。 */
+    var topGround = null;
+    for (var gsi = 0; gsi < W2.segs.length; gsi++){
+      var gsg = W2.segs[gsi];
+      if (gsg.x1 < camX - 40 || gsg.x0 > camX + W + 40) continue;
+      var gsy = gsg.slope ? Math.min(gsg.y0, gsg.y) : gsg.y;
+      if (topGround === null || gsy < topGround) topGround = gsy;
+    }
+    if (topGround === null) topGround = FLOOR;
+    var dg2 = ctx.createLinearGradient(0, topGround - camY, 0, H);
+    dg2.addColorStop(0, "rgba(72,56,116,.96)");
+    dg2.addColorStop(0.4, "rgba(58,44,96,.99)");
+    dg2.addColorStop(1, "rgba(42,30,74,1)");
     ctx.fillStyle = dg2;
-    ctx.fillRect(0, FLOOR - 120, W, H - FLOOR + 120);
+    ctx.fillRect(0, topGround - camY, W, H - (topGround - camY));
     return;
   }
 
@@ -1687,8 +1717,9 @@ function drawCheckpoints(){
     var x = cp.x - camX;
     if (x < -60 || x > W + 60) continue;
     var on = cpReached > i;
+    /* 杆子往地里多插 8px：贴地那一段被地形盖住，看着才是"插着"而不是悬空 */
     ctx.fillStyle = "#8a6a4a";
-    ctx.fillRect(x, cp.y - 54, 4, 54);
+    ctx.fillRect(x, cp.y - 54, 4, 62);
     ctx.beginPath();
     ctx.moveTo(x + 4, cp.y - 54);
     ctx.lineTo(x + 34, cp.y - 46);
@@ -1829,7 +1860,15 @@ function drawPlayer(){
   if (hasPlayerImg){
     /* 立绘按身高撑高一点：脚底对齐 y + player.h，头顶多出一截也不会穿地 */
     var ph2 = player.h + 34, pw2 = ph2 * (playerImg.width / playerImg.height);
+    ctx.save();
+    if (player.face < 0){
+      /* 向左走时水平镜像：绕脚底中心翻，翻完位置不变 */
+      ctx.translate(x + player.w / 2, 0);
+      ctx.scale(-1, 1);
+      ctx.translate(-(x + player.w / 2), 0);
+    }
     ctx.drawImage(playerImg, x + player.w / 2 - pw2 / 2, y + player.h - ph2, pw2, ph2);
+    ctx.restore();
     ctx.globalAlpha = 1;
     return;
   }
