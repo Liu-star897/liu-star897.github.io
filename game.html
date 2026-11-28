@@ -158,6 +158,16 @@ var hasCeilImg = false;
 ceilImg.onload = function(){ hasCeilImg = true; };
 ceilImg.src = "img/ceiling.png?v=1";
 
+/* 道具贴图：img/item-life.png / img/item-shield.png 放进去就替换掉代码画的那版 */
+var lifeImg = new Image();
+var hasLifeImg = false;
+lifeImg.onload = function(){ hasLifeImg = true; };
+lifeImg.src = "img/item-life.png?v=1";
+var shieldImg = new Image();
+var hasShieldImg = false;
+shieldImg.onload = function(){ hasShieldImg = true; };
+shieldImg.src = "img/item-shield.png?v=1";
+
 /* ---------- 贴图槽位：文件放进去就自动替换掉代码画的版本 ---------- */
 function slot(src){
   var im = new Image();
@@ -1586,6 +1596,11 @@ function drawItems(){
 
     if (it.type === "life"){
       var by = it.y + Math.sin(tAll * 2.2 + i) * 2;
+      if (hasLifeImg && lifeImg.width){
+        var lw2 = 34, lh2 = lw2 * lifeImg.height / lifeImg.width;
+        ctx.drawImage(lifeImg, x + 13 - lw2 / 2, by + 4 - lh2 / 2, lw2, lh2);
+        continue;
+      }
       ctx.fillStyle = "#6b4a2e";
       ctx.fillRect(x + 2, by + 16, 6, 10);
       ctx.fillRect(x + 18, by + 16, 6, 10);
@@ -1603,6 +1618,18 @@ function drawItems(){
 
     if (it.type === "shield"){
       var shy = it.y + Math.sin(tAll * 2.4 + i) * 2;
+      if (hasShieldImg && shieldImg.width){
+        /* 图自己带一圈青光，这里只补一层更淡的光晕，免得在夜色里发闷 */
+        var gcx = x + 13, gcy = shy + 14;
+        var glg = ctx.createRadialGradient(gcx, gcy, 3, gcx, gcy, 24);
+        glg.addColorStop(0, "rgba(150,205,255,.28)");
+        glg.addColorStop(1, "rgba(150,205,255,0)");
+        ctx.fillStyle = glg;
+        ctx.beginPath(); ctx.arc(gcx, gcy, 24, 0, 7); ctx.fill();
+        var sww2 = 34, shh2 = sww2 * shieldImg.height / shieldImg.width;
+        ctx.drawImage(shieldImg, gcx - sww2 / 2, gcy - shh2 / 2, sww2, shh2);
+        continue;
+      }
       ctx.save();
       ctx.translate(x + 13, shy + 13);
       var gl2 = ctx.createRadialGradient(0, 0, 2, 0, 0, 18);
