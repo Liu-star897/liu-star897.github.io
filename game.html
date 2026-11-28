@@ -1294,7 +1294,7 @@ function drawSpikes(){
   }
 }
 
-/* 低天花板：一整条压下来的刺，倒挂在头顶 */
+/* 低天花板：一整条压下来的岩顶，倒挂在头顶（贴图下沿就是撞人的那个面） */
 function drawCeil(){
   for (var i = 0; i < W2.ceil.length; i++){
     var cr = W2.ceil[i];
@@ -1305,7 +1305,9 @@ function drawCeil(){
        先别画花纹，等你给贴图，这样换图的时候不用再改结构。 */
     /* 顶必须延伸到画面上沿之外，否则岩体会变成一块悬空的板 */
     var topY = -camY - 240;
-    var bodyH = cr.y - 14 - topY;
+    /* 岩体下沿正好落在 cr.y 上：cr.y 就是撞死的判定面（碰撞盒 cr.y..cr.y+16），
+       画到哪里就死在哪，不能再像画刺那会儿留出 14px 的缝，不然是撞空气 */
+    var bodyH = cr.y - topY;
     if (hasCeilImg && ceilImg.width){
       /* 贴图：等比缩到身体高度，再按【世界坐标】横向平铺。
          不能按屏幕坐标铺——那样贴图会跟着镜头一起滑，像贴在玻璃上。 */
@@ -1318,8 +1320,8 @@ function drawCeil(){
       var tp = 90;
       ctx.moveTo(x0 - tp, topY);
       ctx.lineTo(x1 + tp, topY);
-      ctx.lineTo(x1, cr.y - 14);
-      ctx.lineTo(x0, cr.y - 14);
+      ctx.lineTo(x1, cr.y);
+      ctx.lineTo(x0, cr.y);
       ctx.closePath();
       ctx.clip();
       for (var tx2 = startX; tx2 < cr.x1 + 2; tx2 += dw){
@@ -1363,33 +1365,19 @@ function drawCeil(){
       }
     }
 
-    /* 底边一道暗线，把岩顶和空气分开，不至于糊成一片 */
-    ctx.fillStyle = "rgba(16,10,28,.62)";
-    ctx.fillRect(x0, cr.y - 12, x1 - x0, 5);
+    /* 底边一道暗线，把岩顶和空气分开，不至于糊成一片。
+       有贴图时省掉——贴图自己的下沿已经带了一圈深色描边，再叠一道像贴了条胶带 */
+    if (!(hasCeilImg && ceilImg.width)){
+      ctx.fillStyle = "rgba(16,10,28,.62)";
+      ctx.fillRect(x0, cr.y - 12, x1 - x0, 5);
+    }
     /* 梁底阴影 */
-    var shG = ctx.createLinearGradient(0, cr.y - 14, 0, cr.y + 18);
+    var shG = ctx.createLinearGradient(0, cr.y, 0, cr.y + 32);
     shG.addColorStop(0, "rgba(20,24,34,.3)");
     shG.addColorStop(1, "rgba(20,24,34,0)");
     ctx.fillStyle = shG;
-    ctx.fillRect(x0, cr.y - 14, x1 - x0, 32);
+    ctx.fillRect(x0, cr.y, x1 - x0, 32);
 
-    /* 朝下的刺：冰蓝色，尖端落到 cr.y + 2（这层保留，撞的就是它） */
-    for (var x = x0 + 6; x < x1 - 12; x += 22){
-      var sG = ctx.createLinearGradient(x, cr.y - 14, x + 11, cr.y + 2);
-      sG.addColorStop(0, "#cfd8ea");
-      sG.addColorStop(1, "#8fa2c2");
-      ctx.beginPath();
-      ctx.moveTo(x, cr.y - 14);
-      ctx.lineTo(x + 11, cr.y + 2);
-      ctx.lineTo(x + 22, cr.y - 14);
-      ctx.closePath();
-      ctx.fillStyle = sG; ctx.fill();
-      ctx.lineWidth = 1.2; ctx.strokeStyle = "rgba(90,105,135,.75)"; ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(x + 9.5, cr.y - 11);
-      ctx.lineTo(x + 11, cr.y - 1);
-      ctx.strokeStyle = "rgba(255,255,255,.75)"; ctx.lineWidth = 1.4; ctx.stroke();
-    }
   }
 }
 
